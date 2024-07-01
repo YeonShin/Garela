@@ -6,6 +6,9 @@ import DummyPosts, { PostType } from "./DummyPosts";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
+import { useRecoilState, useRecoilValue } from "recoil";
+import { filterState, selectedCategoryState } from "../../atom";
+import { useNavigate } from "react-router-dom";
 
 const PostContainer = styled.div`
   display: flex;
@@ -121,6 +124,7 @@ const PostText = styled.p`
 
 const PostActions = styled.div`
   display: flex;
+  width: 28vw;
   align-items: center;
   justify-content: space-between;
 `;
@@ -130,23 +134,28 @@ const Action = styled.div`
   align-items: center;
   color: #666;
   cursor: pointer;
+  padding: 5px;
+  padding-left: 15px;
+  padding-right: 20px;
+  border-radius: 15px;
+  &:hover {
+    background: ${(props) => props.theme.colors.primary}; opacity : 0.8;
+    color: white;
+  }
+
 `;
 
 const ActionIcon = styled.span`
   margin-right: 10px;
 `;
 
-interface PostListProps {
-  selectedCategory: string;
-  filter: string;
-  setFilter: React.Dispatch<React.SetStateAction<string>>;
-}
 
-const PostList: React.FC<PostListProps> = ({
-  selectedCategory,
-  filter,
-  setFilter,
+
+const PostList: React.FC = ({
 }) => {
+  const navigate = useNavigate();
+  const [filter, setFilter] = useRecoilState(filterState);
+  const selectedCategory = useRecoilValue(selectedCategoryState);
   const filteredPosts = DummyPosts.filter((post) => {
     if (filter === "All") return true;
     if (filter === "Subscribed") return post.subscribed;
@@ -185,7 +194,7 @@ const PostList: React.FC<PostListProps> = ({
       <Divider />
 
       {filteredPosts.map((post) => (
-        <PostItem key={post.postId}>
+        <PostItem key={post.postId} onClick={() => navigate(`/home/board/${post.postId}`)}>
           <PostHeader>
             <ProfileImage
               src={post.userImg ? post.userImg : BasicProfileImg}

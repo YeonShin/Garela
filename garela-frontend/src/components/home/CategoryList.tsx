@@ -1,4 +1,6 @@
+import { useRecoilState } from "recoil";
 import styled from "styled-components";
+import { selectedCategoryState } from "../../atom";
 
 const CategoryContainer = styled.div`
   background: ${(props) => props.theme.colors.surface};
@@ -30,14 +32,10 @@ const CategoryItem = styled.div<CategoryItemProps>`
   }
 `;
 
-interface PostListProps {
-  selectedCategory: string;
-  setSelectedCategory: React.Dispatch<React.SetStateAction<string>>
-}
-
-const CategoryList:React.FC<PostListProps> = ({selectedCategory, setSelectedCategory}) => {
+const CategoryList:React.FC = () => {
   const categories = ["All", "Study", "Cooking"];
-
+  const [selectedCategory, setSelectedCategory] = useRecoilState(selectedCategoryState);
+  
   return (
     <CategoryContainer>
       <CategoryTitle>Category</CategoryTitle>
