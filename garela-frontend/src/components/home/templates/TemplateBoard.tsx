@@ -1,10 +1,9 @@
 import styled from "styled-components";
-import CategoryList from "./CategoryList";
-import PostList from "./PostList";
-import AdBanner from "./AdBanner";
-import TrendingPostList from "./TrendingPostList";
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import CategoryList from "../CategoryList";
+import AdBanner from "../AdBanner";
+import TrendingPostList from "../TrendingPostList";
+import TrendingTemplateList from "./TrendingTemplateList";
+import TemplateList from "./TemplateList";
 
 const Container = styled.div`
   display: grid;
@@ -31,23 +30,20 @@ const FixedTrendingPostList = styled.div`
   width: 20%;
 `;
 
-const Board:React.FC = () => {
-  const [filter, setFilter] = useState("All");
-
+const TemplateBoard:React.FC = () => {
   return (
     <Container>
       <FixedCategoryList>
-        <CategoryList
-        />
+        <CategoryList/>
       </FixedCategoryList>
       <div></div> {/* 카테고리 리스트의 공간을 차지 */}
-      <Outlet />
+      <TemplateList></TemplateList>
       <FixedTrendingPostList>
         <AdBanner />
-        <TrendingPostList />
+        <TrendingTemplateList />
       </FixedTrendingPostList>
     </Container>
   )
 }
 
-export default Board;
+export default TemplateBoard;
