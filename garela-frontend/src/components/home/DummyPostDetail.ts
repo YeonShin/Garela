@@ -1,5 +1,6 @@
 export interface CommentType {
   userId: number;
+  commentId: number;
   userName: string;
   userImg: string | null;
   createdAt: Date;
@@ -53,19 +54,21 @@ const DummyPostDetail: PostDetailType = {
   comment: [
     {
       userId: 2,
+      commentId: 1,
       userName: "commenter1",
       userImg: "https://via.placeholder.com/40",
       createdAt: new Date("2023-07-01T14:00:00Z"),
       content: "This is a comment",
-      myComment: false,
+      myComment: true,
     },
     {
       userId: 3,
+      commentId: 2,
       userName: "commenter2",
       userImg: "https://via.placeholder.com/40",
       createdAt: new Date("2023-07-01T15:00:00Z"),
       content: "This is another comment",
-      myComment: false,
+      myComment: true,
     },
   ],
 };

@@ -1,9 +1,12 @@
 import styled from "styled-components";
-import DummyPostDetail from "./DummyPostDetail";
+import DummyPostDetail, { CommentType } from "./DummyPostDetail";
 import { formatTimeAgo } from "../../Util";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import ProfileImg from "../../imgs/profile.jpg";
 import PostImg from "../../imgs/postImg.jpg";
+import { useRef, useState } from "react";
+import MoreButtonImg from "../../imgs/moreButton.png";
+import { useNavigate } from "react-router-dom";
 
 const Container = styled.div`
   display: flex;
@@ -26,6 +29,7 @@ const ProfileImage = styled.img`
 const HeaderInfo = styled.div`
   display: flex;
   flex-direction: column;
+  width: 600px;
 `;
 
 const UserName = styled.div`
@@ -66,19 +70,20 @@ const AuthorInfo = styled.div`
   margin-bottom: 20px;
 `;
 
-const FollowButton = styled.button`
+const FollowButton = styled.button<{ isFollowed: boolean }>`
   margin-left: 20px;
   padding: 10px 20px;
-  background-color: ${(props) => props.theme.colors.primary};
-  color: white;
-  border: none;
+  background-color: ${(props) => (props.isFollowed ? "white" : props.theme.colors.primary)};
+  color: ${(props) => (props.isFollowed ? props.theme.colors.primary : "white")};
+  border: ${(props) => (props.isFollowed ? `1px solid ${props.theme.colors.primary}` : "none")};
   border-radius: 5px;
   cursor: pointer;
 
   &:hover {
-    background-color: ${(props) => props.theme.colors.primary}90;
+    background-color: ${(props) => (props.isFollowed ? "#f0f0f0" : `${props.theme.colors.primary}90`)};
   }
 `;
+
 
 const Actions = styled.div`
   display: flex;
@@ -87,10 +92,12 @@ const Actions = styled.div`
   margin-bottom: 20px;
 `;
 
-const Action = styled.div`
+
+const Action = styled.div<{ liked?: boolean }>`
   display: flex;
   align-items: center;
-  color: #666;
+  color: ${(props) => (props.liked ? props.theme.colors.primary : "#666")};
+  font-weight: ${(props) => (props.liked ? "bold" : "normal")};
   cursor: pointer;
   padding: 5px;
   padding-left: 15px;
@@ -102,6 +109,7 @@ const Action = styled.div`
     color: white;
   }
 `;
+
 
 const ActionIcon = styled.span`
   margin-right: 5px;
@@ -125,7 +133,9 @@ const Input = styled.input`
 const SendButton = styled.div`
   font-size: 28px;
   color: ${(props) => props.theme.colors.primary};
-`
+  cursor: pointer;
+`;
+
 
 const CommentList = styled.div`
   margin: 10px 0;
@@ -140,10 +150,108 @@ const CommentItem = styled.div`
 const CommentContent = styled.div`
   display: flex;
   flex-direction: column;
+  width: 600px;
+`;
+
+const MoreButton = styled.img`
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  position: absolute;
+  right: 0;
+  top: -20px;
+`;
+
+const DropdownContainer = styled.div`
+  width: 100%;
+  position: relative;
+`;
+
+const DropdownMenu = styled.div`
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  overflow: hidden;
+  z-index: 10;
+`;
+
+const DropdownItem = styled.div`
+  padding: 10px 20px;
+  cursor: pointer;
+
+  &:hover {
+    background: #f5f5f5;
+  }
 `;
 
 const PostDetail: React.FC = () => {
+  const navigate = useNavigate();
   const post = DummyPostDetail;
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<number | null>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+  const [isFollowed, setIsFollowed] = useState(false);
+  const [likes, setLikes] = useState(post.likes);
+  const [isLiked, setIsLiked] = useState(post.liked);
+  const [comments, setComments] = useState(post.comment);
+  const [newComment, setNewComment] = useState("");
+
+  const handleCommentClick = () => {
+    commentInputRef.current?.focus();
+  };
+
+  const toggleDropdown = (commentId: number | null) => {
+    setSelectedComment(commentId);
+    setShowDropdown((prev) => !prev);
+  };
+
+  const handleFollow = () => {
+    setIsFollowed(!isFollowed);
+  };
+
+  const handleLike = () => {
+    if (isLiked) {
+      setLikes(likes - 1);
+    } else {
+      setLikes(likes + 1);
+    }
+    setIsLiked(!isLiked);
+  };
+  
+  const handleEditPost = () => {  
+    // 추가
+  }
+
+  const handleDeletePost = () => {
+    navigate("/home/board");
+  }
+
+
+  const handleDeleteComment = () => {
+    // 추가
+  }
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewComment(e.target.value);
+  };
+
+  const handleCommentSubmit = () => {
+    const newCommentData = {
+      commentId: comments.length + 1, // 새로운 댓글 ID
+      userId: Math.random(), // 임시 userId
+      userName: "CurrentUser",
+      userImg: ProfileImg,
+      createdAt: new Date(),
+      content: newComment,
+      myComment: true,
+    };
+
+    setComments([...comments, newCommentData]);
+    setNewComment("");
+  };
 
   return (
     <Container>
@@ -158,6 +266,20 @@ const PostDetail: React.FC = () => {
             {post.category} • {formatTimeAgo(new Date(post.createdAt))}
           </PostMeta>
         </HeaderInfo>
+        {post.myPost && (
+                <DropdownContainer>
+                  <MoreButton
+                    src={MoreButtonImg}
+                    onClick={() => toggleDropdown(post.userId)}
+                  />
+                  {showDropdown && selectedComment === post.userId && (
+                    <DropdownMenu>
+                      <DropdownItem onClick={handleEditPost}>수정</DropdownItem>
+                      <DropdownItem onClick={handleDeletePost}>삭제</DropdownItem>
+                    </DropdownMenu>
+                  )}
+                </DropdownContainer>
+              )}
       </Header>
       <Divider />
       <Title>{post.title}</Title>
@@ -172,15 +294,17 @@ const PostDetail: React.FC = () => {
           <UserName>{post.userName}</UserName>
           <div>{post.userInfo}</div>
         </div>
-        <FollowButton>Follow</FollowButton>
+        <FollowButton isFollowed={isFollowed} onClick={handleFollow}>
+          {isFollowed ? "Unfollow" : "Follow"}
+        </FollowButton>
       </AuthorInfo>
       <Divider />
       <Actions>
-        <Action>
+        <Action onClick={handleCommentClick}>
           <ActionIcon>💬</ActionIcon> {post.comments}
         </Action>
-        <Action>
-          <ActionIcon>👍</ActionIcon> {post.likes}
+        <Action liked={isLiked} onClick={handleLike}>
+          <ActionIcon>👍</ActionIcon> {likes}
         </Action>
         <Action>
           <ActionIcon>👁️</ActionIcon> {post.views}
@@ -191,24 +315,46 @@ const PostDetail: React.FC = () => {
       </Actions>
       <CommentInput>
         <ProfileImage src={ProfileImg} alt="Profile" />
-        <Input type="text" placeholder="Write your comment" />
-        <SendButton>➤</SendButton>
+        <Input
+          ref={commentInputRef}
+          type="text"
+          placeholder="Write your comment"
+          value={newComment}
+          onChange={handleCommentChange}
+          onKeyPress={(e) => {
+            if (e.key === "Enter") {
+              handleCommentSubmit();
+            }
+          }}
+        />
+        <SendButton onClick={handleCommentSubmit}>➤</SendButton>
       </CommentInput>
       <CommentList>
-        {post.comment.map((comment) => (
+        {comments.map((comment) => (
           <>
-            <CommentItem key={comment.userId}>
+            <CommentItem key={comment.commentId}>
               <ProfileImage
                 src={comment.userImg ? comment.userImg : BasicProfileImg}
                 alt="Profile"
               />
               <CommentContent>
                 <UserName>{comment.userName}</UserName>
-                <PostMeta>
-                  {formatTimeAgo(new Date(comment.createdAt))}
-                </PostMeta>
+                <PostMeta>{formatTimeAgo(new Date(comment.createdAt))}</PostMeta>
                 <div>{comment.content}</div>
               </CommentContent>
+              {comment.myComment && (
+                <DropdownContainer>
+                  <MoreButton
+                    src={MoreButtonImg}
+                    onClick={() => toggleDropdown(comment.commentId)}
+                  />
+                  {showDropdown && selectedComment === comment.commentId && (
+                    <DropdownMenu>
+                      <DropdownItem onClick={handleDeleteComment}>삭제</DropdownItem>
+                    </DropdownMenu>
+                  )}
+                </DropdownContainer>
+              )}
             </CommentItem>
             <Divider />
           </>
