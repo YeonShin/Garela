@@ -159,10 +159,12 @@ const Register: React.FC = () => {
     // 제출 로직 추가
     console.log("Form Data:", formData);
     setUserInfo({
+      ...userInfo,
       email: formData.email,
       photo: null,
       userId: 1,
-      name: formData.name
+      name: formData.name,
+      info: formData.information
     });
 
     localStorage.setItem("token", "test");

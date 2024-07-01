@@ -1,6 +1,7 @@
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
 import { selectedCategoryState } from "../../atom";
+import { useNavigate } from "react-router-dom";
 
 const CategoryContainer = styled.div`
   background: ${(props) => props.theme.colors.surface};
@@ -33,6 +34,7 @@ const CategoryItem = styled.div<CategoryItemProps>`
 `;
 
 const CategoryList:React.FC = () => {
+  const navigate = useNavigate();
   const categories = ["All", "Study", "Cooking"];
   const [selectedCategory, setSelectedCategory] = useRecoilState(selectedCategoryState);
   
@@ -43,7 +45,7 @@ const CategoryList:React.FC = () => {
         <CategoryItem
           key={category}
           selected={selectedCategory === category}
-          onClick={() => setSelectedCategory(category)}
+          onClick={() => {setSelectedCategory(category); navigate("/home/board")}}
         >
           {category === "All" && "📚 "}
           {category === "Study" && "📖 "}

@@ -5,7 +5,68 @@ export interface UserInfoType {
   photo: string | null;
   userId: number;
   name: string;
+  info: string;
+  followingUser: FollowingUserType[];
+  myPost : PostType[];
+  myTemplate: TemplateType[];
 }
+
+export interface MyInfoType {
+  email: string;
+  photo: string | null;
+  userId: number;
+  name: string;
+  info: string;
+
+
+}
+
+export interface FollowingUserType {
+  userId: number;
+  name: string;
+  photo: string | null;
+}
+
+export interface PostType {
+  postId: number;
+  username: string;
+  userImg: string | null;
+  category: string;
+  title: string;
+  content: string;
+  thumbnailImg : string | null;
+  createdAt : Date;
+  comments: number;
+  likes: number;
+  views: number;
+  liked: boolean;
+  subscribed: boolean;
+};
+
+export interface TemplateType {
+  templateId: number;
+  username: string;
+  userImg: string | null;
+  category: string;
+  title: string;
+  content: string;
+  thumbnailImg : string | null;
+  createdAt : Date;
+  likes: number;
+  views: number;
+  liked: boolean;
+  subscribed: boolean;
+};
+
+export const selectedCategoryState = atom({
+  key: "selectedCategoryState",
+  default: "All"
+});
+
+export const filterState = atom({
+  key: "filterState",
+  default: "All"
+});
 
 export const userInfoState = atom<UserInfoType>({
   key: "userInfoState",
@@ -13,6 +74,12 @@ export const userInfoState = atom<UserInfoType>({
     email: "",
     photo: null,
     userId: 0,
-    name: ""
+    name: "",
+    info: "",
+    followingUser: [],
+    myPost: [],
+    myTemplate: []
   }
 });
+
+
