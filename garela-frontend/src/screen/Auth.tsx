@@ -7,7 +7,6 @@ const Wrapper = styled.div`
   height: 100vh;
   justify-content: center;
   align-items: center;
-  background-image: linear-gradient(to right, #5144a6, #917fff);
 `;
 
 const Auth: React.FC = () => {

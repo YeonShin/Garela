@@ -9,6 +9,8 @@ const theme = {
     accent: '#805AD5', // 보라색과 파랑색이 적절히 합쳐진 느낌
     input: '#E2E8F0', // 라이트 그레이 input 배경색
     primaryForeground: '#FFFFFF', // 버튼 텍스트 색상
+    primaryBorder: '#B3B3B3', // 박스 테두리 색
+    hoverButton: '#D9D9D9'
   },
   spacing: (factor: number) => `${factor * 8}px`,
 };

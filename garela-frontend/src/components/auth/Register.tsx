@@ -1,20 +1,33 @@
+import React, { useState } from "react";
+import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { useState } from "react";
+import { UserInfoType, userInfoState } from "../../atom";
+import { useNavigate } from "react-router-dom";
 
-const Container = styled.div`
+const OuterContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background-color: #f9f9f9;
+  min-height: 90vh;
+  background-color: ${(props) => props.theme.colors.background};
+
+`;
+
+const InnerContainer = styled.div`
+  border: 2px solid ${(props) => props.theme.colors.primaryBorder};
+  border-radius: 10px;
+  padding: 2rem;
+  background-color: ${(props) => props.theme.colors.surface};
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
 
 const Box = styled.div`
   display: flex;
-  width: 800px;
-  background: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  align-items: center;
+  justify-content: center;
+  width: 55vw;
+  background: ${(props) => props.theme.colors.surface};
   border-radius: 10px;
   overflow: hidden;
 `;
@@ -112,6 +125,7 @@ interface FormData {
 }
 
 const Register: React.FC = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
     email: "",
@@ -121,6 +135,7 @@ const Register: React.FC = () => {
     name: "",
     information: "",
   });
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(userInfoState);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -134,85 +149,104 @@ const Register: React.FC = () => {
     setStep(step + 1);
   };
 
+  const handleBack = (e: React.FormEvent) => {
+    e.preventDefault();
+    setStep(step - 1);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // 제출 로직 추가
     console.log("Form Data:", formData);
+    setUserInfo({
+      email: formData.email,
+      photo: null,
+      userId: 1,
+      name: formData.name
+    });
+
+    localStorage.setItem("token", "test");
+    navigate("/");
   };
 
   return (
-    <Container>
+    <OuterContainer>
       <ProgressBar>
         <ProgressStep active={step === 1} />
         <ProgressStep active={step === 2} />
       </ProgressBar>
-      <Box>
-        <LeftSide>
-          <Title>Garela</Title>
-          <Subtitle>Best Community</Subtitle>
-          {/* 이미지 추가 가능 */}
-        </LeftSide>
-        <RightSide>
-          {step === 1 && (
-            <Form onSubmit={handleNext}>
-              <Label>Email</Label>
-              <Input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <Label>Password</Label>
-              <Input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-              <Label>Check Password</Label>
-              <Input
-                type="password"
-                name="passwordCheck"
-                value={formData.passwordCheck}
-                onChange={handleChange}
-                required
-              />
-              <Label>Phone</Label>
-              <Input
-                type="text"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-              <Button type="submit">Next</Button>
-            </Form>
-          )}
-          {step === 2 && (
-            <Form onSubmit={handleSubmit}>
-              <Label>Name</Label>
-              <Input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-              <Label>Information</Label>
-              <Textarea
-                name="information"
-                value={formData.information}
-                onChange={handleChange}
-                required
-              />
-              <Button type="submit">Register</Button>
-            </Form>
-          )}
-        </RightSide>
-      </Box>
-    </Container>
+      <InnerContainer>
+        <Box>
+          <LeftSide>
+            <Title>Garela</Title>
+            <Subtitle>Best Community</Subtitle>
+            {/* 이미지 추가 가능 */}
+          </LeftSide>
+          <RightSide>
+            {step === 1 && (
+              <Form onSubmit={handleNext}>
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                />
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <Label>Check Password</Label>
+                <Input
+                  type="password"
+                  name="passwordCheck"
+                  value={formData.passwordCheck}
+                  onChange={handleChange}
+                  required
+                />
+                <Label>Phone</Label>
+                <Input
+                  type="text"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                />
+                <Button type="submit">Next</Button>
+              </Form>
+            )}
+            {step === 2 && (
+              <Form onSubmit={handleSubmit}>
+                <Label>Name</Label>
+                <Input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+                <Label>Information</Label>
+                <Textarea
+                  name="information"
+                  value={formData.information}
+                  onChange={handleChange}
+                  required
+                />
+                <Button type="button" onClick={handleBack}>
+                  Back
+                </Button>
+                <Button type="submit">Register</Button>
+              </Form>
+            )}
+          </RightSide>
+        </Box>
+      </InnerContainer>
+    </OuterContainer>
   );
 };
 
