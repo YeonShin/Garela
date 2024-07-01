@@ -6,6 +6,8 @@ import Home from "./screen/Home";
 import Auth from "./screen/Auth";
 import Login from "./components/auth/Login";
 import Register from "./components/auth/Register";
+import PostList from "./components/home/PostList";
+import Board from "./components/home/Board";
 
 const router = createBrowserRouter([
   {
@@ -34,7 +36,13 @@ const router = createBrowserRouter([
   },
   {
     path: "home",
-    element: <Home />
+    element: <Home />,
+    children: [
+      {
+        path: "board",
+        element: <Board />
+      },
+    ]
   },
 ]);
 

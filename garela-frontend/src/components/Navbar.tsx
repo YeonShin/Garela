@@ -10,14 +10,25 @@ import { UserInfoType, userInfoState } from "../atom";
 
 Modal.setAppElement("#root");
 
+const FixedNavbar = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+`;
+
 const Nav = styled.nav`
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
+  padding-left: 80px;
+  padding-right: 80px;
   background-color: ${(props) => props.theme.colors.surface};
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid #e5e5e5;
+  height: 80px; /* 높이 값을 추가하여 마진 계산을 정확하게 합니다 */
 `;
 
 const Logo = styled.div`
@@ -290,7 +301,7 @@ const Navbar: React.FC = () => {
   const closeLogoutModal = () => setLogoutModalOpen(false);
 
   return (
-    <>
+    <FixedNavbar>
       <Nav>
         <Link to="/">
           <Logo>
@@ -369,7 +380,7 @@ const Navbar: React.FC = () => {
         <ConfirmButton onClick={handleLogout}>확인</ConfirmButton>
         <CancelButton onClick={closeLogoutModal}>취소</CancelButton>
       </Modal>
-    </>
+    </FixedNavbar>
   );
 };
 
