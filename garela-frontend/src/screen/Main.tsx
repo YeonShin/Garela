@@ -9,6 +9,7 @@ const MainContainer = styled.div`
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  margin-top: 80px; /* 네비게이션 바의 높이를 고려한 마진 */
 `;
 
 const Section = styled.section`
