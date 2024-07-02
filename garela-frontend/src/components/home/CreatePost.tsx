@@ -5,6 +5,7 @@ import { useRecoilState } from "recoil";
 import styled from "styled-components";
 import { postEditorState, postTitleState } from "../../atom";
 
+
 // Define the Divider Blot
 const BlockEmbed = Quill.import("blots/block/embed");
 
@@ -236,25 +237,7 @@ const TitleInput = styled.input`
   border-radius: 4px;
 `;
 
-const ButtonContainer = styled.div`
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-`;
 
-const SubmitButton = styled.button`
-  padding: 10px 20px;
-  background-color: ${(props) => props.theme.colors.primary};
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-
-  &:hover {
-    background-color: ${(props) => props.theme.colors.primary}90;
-  }
-`;
 
 const CreatePost: React.FC = () => {
   const [editorState, setEditorState] = useRecoilState(postEditorState);

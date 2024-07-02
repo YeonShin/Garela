@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import PostIcon from "../imgs/postBtn.png";
 import ProfileImg from "../imgs/profile.jpg";
-import TemplateImg from "../imgs/templateImg.png"; // Template 이미지 추가
+import TemplateImg from "../imgs/templateImg.png";
 import BasicProfileImg from "../imgs/basicProfile.png";
 import { useRecoilState, useRecoilValue } from "recoil";
 import {
@@ -14,6 +14,7 @@ import {
   postTitleState,
   userInfoState,
 } from "../atom";
+import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
 
 Modal.setAppElement("#root");
 
@@ -297,10 +298,19 @@ const PostCancleButton = styled.button`
 
 const TemplateBtnContainer = styled.div`
   display: flex;
+    flex-direction: column;
   align-items: center;
   cursor: pointer;
   position: relative;
   margin-left: 1rem;
+  padding: 10px;
+  border-radius: 5px;
+
+  &:hover {
+    background-color: #ECECEC;
+    background-opacity: 50%;
+    
+  }
 `;
 
 const TemplateContainer = styled.div`
@@ -325,10 +335,12 @@ const Navbar: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const [isPostDropdownOpen, setPostDropdownOpen] = useState(false); // 상태 추가
+  const [isTemplateDropdownOpen, setTemplateDropdownOpen] = useState(false); // 템플릿 드롭다운 상태 추가
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(userInfoState);
   const [mode, setMode] = useRecoilState(modeState);
-  const editorState = useRecoilValue(postEditorState);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null); // 선택된 템플릿 상태 추가
+  const [editorState, setEditorState] = useRecoilState(postEditorState); // 에디터 상태 추가
   const postTitle = useRecoilValue(postTitleState);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
@@ -386,8 +398,17 @@ const Navbar: React.FC = () => {
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
   const togglePostDropdown = () => setPostDropdownOpen(!isPostDropdownOpen); // 토글 함수 추가
+  const toggleTemplateDropdown = () => setTemplateDropdownOpen(!isTemplateDropdownOpen); // 템플릿 드롭다운 토글 함수 추가
   const openLogoutModal = () => setLogoutModalOpen(true);
   const closeLogoutModal = () => setLogoutModalOpen(false);
+
+  const handleApplyTemplate = () => {
+    if (selectedTemplate) {
+      setEditorState(selectedTemplate.content); // 선택된 템플릿의 콘텐츠를 에디터에 적용
+      setSelectedTemplate(null);
+      setTemplateDropdownOpen(false); // 템플릿 드롭다운 닫기
+    }
+  };
 
   return (
     <FixedNavbar>
@@ -440,7 +461,7 @@ const Navbar: React.FC = () => {
                         to="/create/template"
                         onClick={() => setMode("createTemplate")}
                       >
-                        📝 템플릿 작성
+                        📑 템플릿 작성
                       </DropdownItem>
                     </DropdownMenu>
                   )}
@@ -479,10 +500,14 @@ const Navbar: React.FC = () => {
         {mode === "createPost" && (
           <NavLinks>
             <TemplateContainer>
-              <TemplateBtnContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
+
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
@@ -490,7 +515,7 @@ const Navbar: React.FC = () => {
                 navigate("/home/board");
               }}
             >
-              Cancle
+              Cancel
             </PostCancleButton>
             <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
           </NavLinks>
@@ -498,10 +523,13 @@ const Navbar: React.FC = () => {
         {mode === "createTemplate" && (
           <NavLinks>
             <TemplateContainer>
-              <TemplateBtnContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
@@ -509,9 +537,11 @@ const Navbar: React.FC = () => {
                 navigate("/home/template");
               }}
             >
-              Cancle
+              Cancel
             </PostCancleButton>
-            <PostCompleteButton onClick={handleTemplatePost}>Post</PostCompleteButton>
+            <PostCompleteButton onClick={handleTemplatePost}>
+              Post
+            </PostCompleteButton>
           </NavLinks>
         )}
       </Nav>
