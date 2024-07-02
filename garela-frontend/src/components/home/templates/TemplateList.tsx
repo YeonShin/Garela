@@ -107,7 +107,6 @@ const TemplateInfo = styled.div`
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-
 `;
 
 const TemplateTitle = styled.div`
@@ -138,6 +137,7 @@ const Action = styled.div`
   cursor: pointer;
   padding: 5px 10px;
   border-radius: 15px;
+  position: relative;
   &:hover {
     background: ${(props) => props.theme.colors.primary};
     opacity: 0.8;
@@ -149,6 +149,7 @@ const ActionIcon = styled.span`
   margin-right: 5px;
 `;
 
+
 const TemplateList: React.FC = () => {
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
@@ -159,9 +160,18 @@ const TemplateList: React.FC = () => {
     if (filter === "All") return true;
     if (filter === "Subscribed") return template.subscribed;
     if (filter === "Trending") {
-      return template.likes > 5;
+      const today = new Date();
+      const templateDate = new Date(template.createdAt);
+      const diffTime = Math.abs(today.getTime() - templateDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays <= 7;
     }
     return false;
+  }).sort((a, b) => {
+    if (filter === "Trending") {
+      return b.likes - a.likes;
+    }
+    return 0;
   }).filter((template) => {
     if (selectedCategory === "All") return true;
     return template.category === selectedCategory;
@@ -175,7 +185,6 @@ const TemplateList: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
 
   return (
     <BodyContainer>
@@ -241,7 +250,6 @@ const TemplateList: React.FC = () => {
         <TemplateDetail
           isOpen={isModalOpen}
           onRequestClose={closeModal}
-          template={selectedTemplate}
         />
       )}
     </BodyContainer>

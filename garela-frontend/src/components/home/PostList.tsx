@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import ProfileImg from "../../imgs/profile.jpg";
-import PostImg from "../../imgs/postImg.jpg";
 import DummyPosts, { PostType } from "./DummyPosts";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
@@ -13,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 const PostContainer = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 612px;
 `;
 
 const PostCreationForm = styled.div`
@@ -75,7 +75,7 @@ const PostItem = styled.div`
   flex-direction: column;
   padding: 10px;
   margin-bottom: 20px;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 
   &:hover {
     transform: translateY(-5px);
@@ -99,7 +99,6 @@ const PostContent = styled.div`
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 `;
-
 
 const PostImage = styled.img`
   width: 100px;
@@ -139,34 +138,45 @@ const Action = styled.div`
   padding-right: 20px;
   border-radius: 15px;
   &:hover {
-    background: ${(props) => props.theme.colors.primary}; opacity : 0.8;
+    background: ${(props) => props.theme.colors.primary};
+    opacity: 0.8;
     color: white;
   }
-
 `;
 
 const ActionIcon = styled.span`
   margin-right: 10px;
 `;
 
-
-
-const PostList: React.FC = ({
-}) => {
+const PostList: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
-  const filteredPosts = DummyPosts.filter((post) => {
-    if (filter === "All") return true;
-    if (filter === "Subscribed") return post.subscribed;
-    if (filter === "Trending") {
-      return post.likes > 5;
-    }
-    return false;
-  }).filter((post) => {
-    if (selectedCategory === "All") return true;
-    return post.category === selectedCategory;
-  });
+  const [posts, setPosts] = useState<PostType[]>(DummyPosts);
+
+  const filteredPosts = posts
+    .filter((post) => {
+      if (filter === "All") return true;
+      if (filter === "Subscribed") return post.subscribed;
+      if (filter === "Trending") {
+        const today = new Date();
+        const postDate = new Date(post.createdAt);
+        const diffTime = Math.abs(today.getTime() - postDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 7;
+      }
+      return false;
+    })
+    .sort((a, b) => {
+      if (filter === "Trending") {
+        return b.likes - a.likes;
+      }
+      return 0;
+    })
+    .filter((post) => {
+      if (selectedCategory === "All") return true;
+      return post.category === selectedCategory;
+    });
 
   return (
     <PostContainer>
@@ -192,7 +202,6 @@ const PostList: React.FC = ({
         </FilterLink>
       </PostFilters>
       <Divider />
-
       {filteredPosts.map((post) => (
         <PostItem key={post.postId} onClick={() => navigate(`/home/board/${post.postId}`)}>
           <PostHeader>
