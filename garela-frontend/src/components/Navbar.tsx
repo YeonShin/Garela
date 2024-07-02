@@ -4,9 +4,16 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import PostIcon from "../imgs/postBtn.png";
 import ProfileImg from "../imgs/profile.jpg";
+import TemplateImg from "../imgs/templateImg.png"; // Template 이미지 추가
 import BasicProfileImg from "../imgs/basicProfile.png";
-import { useRecoilState } from "recoil";
-import { UserInfoType, modeState, userInfoState } from "../atom";
+import { useRecoilState, useRecoilValue } from "recoil";
+import {
+  UserInfoType,
+  modeState,
+  postEditorState,
+  postTitleState,
+  userInfoState,
+} from "../atom";
 
 Modal.setAppElement("#root");
 
@@ -254,6 +261,65 @@ const customStyles = {
   },
 };
 
+const PostCompleteButton = styled.button`
+  margin-left: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: ${(props) => props.theme.colors.primary};
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${(props) => props.theme.colors.primary}90;
+  }
+`;
+
+const PostCancleButton = styled.button`
+  margin-left: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: black;
+  background-color: white;
+  border: 1px solid grey;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${(props) => props.theme.colors.text}90;
+  }
+`;
+
+const TemplateBtnContainer = styled.div`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  margin-left: 1rem;
+`;
+
+const TemplateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const TemplateButton = styled.img`
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+`;
+
+const TemplateText = styled.span`
+  font-size: 0.75rem;
+  color: ${(props) => props.theme.colors.text};
+`;
+
 const Navbar: React.FC = () => {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -262,6 +328,8 @@ const Navbar: React.FC = () => {
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(userInfoState);
   const [mode, setMode] = useRecoilState(modeState);
+  const editorState = useRecoilValue(postEditorState);
+  const postTitle = useRecoilValue(postTitleState);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
   const location = useLocation();
@@ -304,6 +372,16 @@ const Navbar: React.FC = () => {
     setIsLoggedIn(false);
     navigate("/");
     setLogoutModalOpen(false);
+  };
+
+  const handlePost = () => {
+    console.log("Title:", postTitle);
+    console.log("Content:", editorState);
+  };
+
+  const handleTemplatePost = () => {
+    console.log("Title:", postTitle);
+    console.log("Content:", editorState);
   };
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
@@ -352,11 +430,17 @@ const Navbar: React.FC = () => {
                   New Post
                   {isPostDropdownOpen && (
                     <DropdownMenu>
-                      <DropdownItem to="/create/post" onClick={() => setMode("createPost")}>
+                      <DropdownItem
+                        to="/create/post"
+                        onClick={() => setMode("createPost")}
+                      >
                         📝 게시글 작성
                       </DropdownItem>
-                      <DropdownItem to="/create/template" onClick={() => setMode("createTemplate")}>
-                        📜 템플릿 작성
+                      <DropdownItem
+                        to="/create/template"
+                        onClick={() => setMode("createTemplate")}
+                      >
+                        📝 템플릿 작성
                       </DropdownItem>
                     </DropdownMenu>
                   )}
@@ -394,8 +478,40 @@ const Navbar: React.FC = () => {
         )}
         {mode === "createPost" && (
           <NavLinks>
-            <LoginButton to="/auth/login">Save</LoginButton>
-            <RegisterButton to="/auth/register">Post</RegisterButton>
+            <TemplateContainer>
+              <TemplateBtnContainer>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                navigate("/home/board");
+              }}
+            >
+              Cancle
+            </PostCancleButton>
+            <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
+          </NavLinks>
+        )}
+        {mode === "createTemplate" && (
+          <NavLinks>
+            <TemplateContainer>
+              <TemplateBtnContainer>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                navigate("/home/template");
+              }}
+            >
+              Cancle
+            </PostCancleButton>
+            <PostCompleteButton onClick={handleTemplatePost}>Post</PostCompleteButton>
           </NavLinks>
         )}
       </Nav>

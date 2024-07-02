@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { useRecoilState } from "recoil";
 import styled from "styled-components";
+import { postEditorState, postTitleState } from "../../atom";
 
 // Define the Divider Blot
 const BlockEmbed = Quill.import("blots/block/embed");
@@ -135,8 +137,8 @@ const EditorContainer = styled.div`
   max-height: 700px; /* Ensure max height matches the parent height */
 
   .ql-editor {
-    min-height: 460px; /* Set minimum height for the editor */
-    max-height: 460px;
+    min-height: 500px; /* Set minimum height for the editor */
+    max-height: 500px;
   }
 `;
 
@@ -145,7 +147,7 @@ const PreviewContainer = styled.div`
   padding: 20px;
   background-color: #f9f9f9;
   border-left: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 0px 8px 8px 0px;
   overflow-y: auto; /* Enable vertical scroll */
   max-height: 700px; /* Ensure max height matches the parent height */
 
@@ -255,13 +257,8 @@ const SubmitButton = styled.button`
 `;
 
 const CreatePost: React.FC = () => {
-  const [editorState, setEditorState] = useState("");
-  const [title, setTitle] = useState("");
-
-  const handleSubmit = () => {
-    console.log("Title:", title);
-    console.log("Content:", editorState);
-  };
+  const [editorState, setEditorState] = useRecoilState(postEditorState);
+  const [title, setTitle] = useRecoilState(postTitleState);
 
   return (
     <Body>
@@ -280,9 +277,6 @@ const CreatePost: React.FC = () => {
             modules={modules}
             formats={formats}
           />
-          <ButtonContainer>
-            <SubmitButton onClick={handleSubmit}>Submit</SubmitButton>
-          </ButtonContainer>
         </EditorContainer>
         <PreviewContainer dangerouslySetInnerHTML={{ __html: editorState }} />
       </EditorWrapper>
