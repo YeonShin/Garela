@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import DummyTemplates from "./DummyTemplate";
 import BasicProfileImg from "../../../imgs/basicProfile.png";
@@ -6,7 +6,8 @@ import templateImg from "../../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../../Util";
 import ProfileImg from "../../../imgs/profile.jpg";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { filterState, selectedCategoryState } from "../../../atom";
+import { TemplateType, filterState, selectedCategoryState } from "../../../atom";
+import TemplateDetail from "./TemplateDetail";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -151,6 +152,8 @@ const ActionIcon = styled.span`
 const TemplateList: React.FC = () => {
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType | null>(null);
 
   const filteredTemplates = DummyTemplates.filter((template) => {
     if (filter === "All") return true;
@@ -163,6 +166,16 @@ const TemplateList: React.FC = () => {
     if (selectedCategory === "All") return true;
     return template.category === selectedCategory;
   });
+
+  const openModal = (template: TemplateType) => {
+    setSelectedTemplate(template);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
 
   return (
     <BodyContainer>
@@ -190,7 +203,7 @@ const TemplateList: React.FC = () => {
       <Divider />
       <TemplateContainer>
         {filteredTemplates.map((template) => (
-          <TemplateItem key={template.templateId}>
+          <TemplateItem key={template.templateId} onClick={() => openModal(template)}>
             <TemplateImage
               src={template.thumbnailImg ? template.thumbnailImg : templateImg}
               alt="Template"
@@ -223,6 +236,14 @@ const TemplateList: React.FC = () => {
           </TemplateItem>
         ))}
       </TemplateContainer>
+
+      {isModalOpen && selectedTemplate && (
+        <TemplateDetail
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          template={selectedTemplate}
+        />
+      )}
     </BodyContainer>
   );
 };
