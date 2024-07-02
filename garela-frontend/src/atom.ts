@@ -82,4 +82,17 @@ export const userInfoState = atom<UserInfoType>({
   }
 });
 
+export const modeState = atom({
+  key: "modeState",
+  default: "default"
+});
 
+export const postEditorState = atom({
+  key: "postEditorState",
+  default: "",
+});
+
+export const postTitleState = atom({
+  key: "postTitleState",
+  default: "",
+});

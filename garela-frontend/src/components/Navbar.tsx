@@ -4,9 +4,17 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import PostIcon from "../imgs/postBtn.png";
 import ProfileImg from "../imgs/profile.jpg";
+import TemplateImg from "../imgs/templateImg.png";
 import BasicProfileImg from "../imgs/basicProfile.png";
-import { useRecoilState } from "recoil";
-import { UserInfoType, userInfoState } from "../atom";
+import { useRecoilState, useRecoilValue } from "recoil";
+import {
+  UserInfoType,
+  modeState,
+  postEditorState,
+  postTitleState,
+  userInfoState,
+} from "../atom";
+import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
 
 Modal.setAppElement("#root");
 
@@ -28,7 +36,7 @@ const Nav = styled.nav`
   background-color: ${(props) => props.theme.colors.surface};
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid #e5e5e5;
-  height: 80px; /* 높이 값을 추가하여 마진 계산을 정확하게 합니다 */
+  height: 80px;
 `;
 
 const Logo = styled.div`
@@ -88,7 +96,7 @@ const RegisterButton = styled(Link)`
   }
 `;
 
-const PostButton = styled(Link)`
+const PostButton = styled.div`
   display: flex;
   align-items: center;
   margin-left: 1rem;
@@ -101,6 +109,7 @@ const PostButton = styled(Link)`
   border-radius: 15px;
   cursor: pointer;
   transition: background-color 0.3s;
+  position: relative;
 
   &:hover {
     background-color: ${(props) => props.theme.colors.hoverButton}90;
@@ -253,13 +262,88 @@ const customStyles = {
   },
 };
 
+const PostCompleteButton = styled.button`
+  margin-left: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white;
+  background-color: ${(props) => props.theme.colors.primary};
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${(props) => props.theme.colors.primary}90;
+  }
+`;
+
+const PostCancleButton = styled.button`
+  margin-left: 1rem;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: black;
+  background-color: white;
+  border: 1px solid grey;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${(props) => props.theme.colors.text}90;
+  }
+`;
+
+const TemplateBtnContainer = styled.div`
+  display: flex;
+    flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  margin-left: 1rem;
+  padding: 10px;
+  border-radius: 5px;
+
+  &:hover {
+    background-color: #ECECEC;
+    background-opacity: 50%;
+    
+  }
+`;
+
+const TemplateContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const TemplateButton = styled.img`
+  width: 24px;
+  height: 24px;
+  margin-bottom: 4px;
+`;
+
+const TemplateText = styled.span`
+  font-size: 0.75rem;
+  color: ${(props) => props.theme.colors.text};
+`;
+
 const Navbar: React.FC = () => {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const [isPostDropdownOpen, setPostDropdownOpen] = useState(false); // 상태 추가
+  const [isTemplateDropdownOpen, setTemplateDropdownOpen] = useState(false); // 템플릿 드롭다운 상태 추가
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(userInfoState);
+  const [mode, setMode] = useRecoilState(modeState);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null); // 선택된 템플릿 상태 추가
+  const [editorState, setEditorState] = useRecoilState(postEditorState); // 에디터 상태 추가
+  const postTitle = useRecoilValue(postTitleState);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -276,9 +360,15 @@ const Navbar: React.FC = () => {
       ) {
         setDropdownOpen(false);
       }
+      if (
+        postDropdownRef.current &&
+        !postDropdownRef.current.contains(event.target as Node)
+      ) {
+        setPostDropdownOpen(false); // Post 드롭다운 닫기
+      }
     };
 
-    if (isDropdownOpen) {
+    if (isDropdownOpen || isPostDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     } else {
       document.removeEventListener("mousedown", handleClickOutside);
@@ -287,7 +377,7 @@ const Navbar: React.FC = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isPostDropdownOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -296,14 +386,34 @@ const Navbar: React.FC = () => {
     setLogoutModalOpen(false);
   };
 
+  const handlePost = () => {
+    console.log("Title:", postTitle);
+    console.log("Content:", editorState);
+  };
+
+  const handleTemplatePost = () => {
+    console.log("Title:", postTitle);
+    console.log("Content:", editorState);
+  };
+
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
+  const togglePostDropdown = () => setPostDropdownOpen(!isPostDropdownOpen); // 토글 함수 추가
+  const toggleTemplateDropdown = () => setTemplateDropdownOpen(!isTemplateDropdownOpen); // 템플릿 드롭다운 토글 함수 추가
   const openLogoutModal = () => setLogoutModalOpen(true);
   const closeLogoutModal = () => setLogoutModalOpen(false);
+
+  const handleApplyTemplate = () => {
+    if (selectedTemplate) {
+      setEditorState(selectedTemplate.content); // 선택된 템플릿의 콘텐츠를 에디터에 적용
+      setSelectedTemplate(null);
+      setTemplateDropdownOpen(false); // 템플릿 드롭다운 닫기
+    }
+  };
 
   return (
     <FixedNavbar>
       <Nav>
-        <Link to="/">
+        <Link to="/" onClick={() => setMode("default")}>
           <Logo>
             <MountainIcon
               xmlns="http://www.w3.org/2000/svg"
@@ -318,58 +428,122 @@ const Navbar: React.FC = () => {
             Garela
           </Logo>
         </Link>
+        {mode === "default" && (
+          <NavLinks>
+            <StyledLink
+              to="/home/board"
+              active={location.pathname === "/home/board"}
+            >
+              Board
+            </StyledLink>
+            <StyledLink
+              to="/home/template"
+              active={location.pathname === "/home/template"}
+            >
+              Template
+            </StyledLink>
+            {isLoggedIn ? (
+              <>
+                <PostButton onClick={togglePostDropdown} ref={postDropdownRef}>
+                  <IconContainer>
+                    <img src={PostIcon} alt="New Post Icon" />
+                  </IconContainer>
+                  New Post
+                  {isPostDropdownOpen && (
+                    <DropdownMenu>
+                      <DropdownItem
+                        to="/create/post"
+                        onClick={() => setMode("createPost")}
+                      >
+                        📝 게시글 작성
+                      </DropdownItem>
+                      <DropdownItem
+                        to="/create/template"
+                        onClick={() => setMode("createTemplate")}
+                      >
+                        📑 템플릿 작성
+                      </DropdownItem>
+                    </DropdownMenu>
+                  )}
+                </PostButton>
+                <ProfileButton onClick={toggleDropdown}>
+                  <ProfileImage
+                    src={userInfo.photo ? ProfileImg : BasicProfileImg}
+                    alt="Profile"
+                  />
+                  {isDropdownOpen && (
+                    <DropdownMenu ref={dropdownRef}>
+                      <DropdownHeader>
+                        <HeaderImage
+                          src={userInfo.photo ? ProfileImg : BasicProfileImg}
+                          alt="Profile"
+                        />
+                        <HeaderName>{userInfo.name}</HeaderName>
+                      </DropdownHeader>
+                      <DropdownItem to="/profile">내 프로필</DropdownItem>
+                      <DropdownItem to="/settings">설정</DropdownItem>
+                      <DropdownButton onClick={openLogoutModal}>
+                        로그아웃
+                      </DropdownButton>
+                    </DropdownMenu>
+                  )}
+                </ProfileButton>
+              </>
+            ) : (
+              <>
+                <LoginButton to="/auth/login">Login</LoginButton>
+                <RegisterButton to="/auth/register">Register</RegisterButton>
+              </>
+            )}
+          </NavLinks>
+        )}
+        {mode === "createPost" && (
+          <NavLinks>
+            <TemplateContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
 
-        <NavLinks>
-          <StyledLink
-            to="/home/board"
-            active={location.pathname === "/home/board"}
-          >
-            Board
-          </StyledLink>
-          <StyledLink
-            to="/home/template"
-            active={location.pathname === "/home/template"}
-          >
-            Template
-          </StyledLink>
-          {isLoggedIn ? (
-            <>
-              <PostButton to="/home/newpost">
-                <IconContainer>
-                  <img src={PostIcon} alt="New Post Icon" />
-                </IconContainer>
-                New Post
-              </PostButton>
-              <ProfileButton onClick={toggleDropdown}>
-                <ProfileImage
-                  src={userInfo.photo ? ProfileImg : BasicProfileImg}
-                  alt="Profile"
-                />
-                {isDropdownOpen && (
-                  <DropdownMenu ref={dropdownRef}>
-                    <DropdownHeader>
-                      <HeaderImage
-                        src={userInfo.photo ? ProfileImg : BasicProfileImg}
-                        alt="Profile"
-                      />
-                      <HeaderName>{userInfo.name}</HeaderName>
-                    </DropdownHeader>
-                    <DropdownItem to="/profile">내 프로필</DropdownItem>
-                    <DropdownItem to="/settings">설정</DropdownItem>
-                    <DropdownButton onClick={openLogoutModal}>
-                      로그아웃
-                    </DropdownButton>
-                  </DropdownMenu>
-                )}
-              </ProfileButton>
-            </>
-          ) : (
-            <>
-              <LoginButton to="/auth/login">Login</LoginButton>
-              <RegisterButton to="/auth/register">Register</RegisterButton>
-            </>
-          )}
-        </NavLinks>
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                navigate("/home/board");
+              }}
+            >
+              Cancel
+            </PostCancleButton>
+            <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
+          </NavLinks>
+        )}
+        {mode === "createTemplate" && (
+          <NavLinks>
+            <TemplateContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                navigate("/home/template");
+              }}
+            >
+              Cancel
+            </PostCancleButton>
+            <PostCompleteButton onClick={handleTemplatePost}>
+              Post
+            </PostCompleteButton>
+          </NavLinks>
+        )}
       </Nav>
       <Modal
         isOpen={isLogoutModalOpen}
