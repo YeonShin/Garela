@@ -10,6 +10,9 @@ import PostList from "./components/home/PostList";
 import Board from "./components/home/Board";
 import TemplateBoard from "./components/home/templates/TemplateBoard";
 import PostDetail from "./components/home/PostDetail";
+import CreatePost from "./components/home/CreatePost";
+import CreateTemplate from "./components/home/templates/CreateTemplate";
+import Create from "./screen/Create";
 
 const router = createBrowserRouter([
   {
@@ -51,15 +54,29 @@ const router = createBrowserRouter([
           {
             path: ":postId",
             element: <PostDetail />
-          }
+          },
         ]
       },
       {
         path: "template",
-        element: <TemplateBoard />
+        element: <TemplateBoard />,
       }
     ]
   },
+  {
+    path: "create",
+    element: <Create />,
+    children: [
+      {
+        path: "post",
+        element: <CreatePost />
+      },
+      {
+        path: "template",
+        element: <CreateTemplate />
+      }
+    ]
+  }
 ]);
 
 export default router;

@@ -82,4 +82,9 @@ export const userInfoState = atom<UserInfoType>({
   }
 });
 
+export const modeState = atom({
+  key: "modeState",
+  default: "default"
+});
+
 
