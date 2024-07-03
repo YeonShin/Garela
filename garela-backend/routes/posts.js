@@ -259,13 +259,6 @@ router.get('/:postId', authenticateJWT, (req, res) => {
 
 /**
  * @swagger
- * tags:
- *   name: Posts
- *   description: 게시글 관련 API 입니다.
- */
-
-/**
- * @swagger
  * /posts:
  *   post:
  *     summary: 게시글 작성
@@ -345,6 +338,136 @@ router.post('/', authenticateJWT, (req, res) => {
           res.status(200).json({ postId });
         });
       });
+    });
+  });
+});
+
+/**
+ * @swagger
+ * /posts/{postId}:
+ *   put:
+ *     summary: 게시글 수정
+ *     description: 게시글을 수정합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *               - category
+ *               - summary
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               summary:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 게시글 수정 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 필수 입력 항목이 누락됨
+ *       403:
+ *         description: 권한 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const { title, content, category, summary } = req.body;
+  
+  if (!title || !content || !category || !summary) {
+    return res.status(400).send('Missing required fields');
+  }
+
+  const userId = req.user.userId;
+
+  // Check if the user is the owner of the post
+  const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
+  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+    if (results.length === 0) return res.status(404).send('Post not found');
+    if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
+
+    // Update the post
+    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ? WHERE post_id = ?';
+    connection.query(updateQuery, [title, content, category, summary, postId], (err) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ result: 'OK' });
+    });
+  });
+});
+
+
+
+/**
+ * @swagger
+ * /posts/{postId}:
+ *   delete:
+ *     summary: 게시글 삭제
+ *     description: 게시글을 삭제합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 게시글 삭제 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       403:
+ *         description: 권한 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete('/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user is the owner of the post
+  const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
+  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+    if (results.length === 0) return res.status(404).send('Post not found');
+    if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
+
+    // Delete the post
+    const deleteQuery = 'DELETE FROM posts WHERE post_id = ?';
+    connection.query(deleteQuery, [postId], (err) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ result: 'OK' });
     });
   });
 });
