@@ -3,17 +3,21 @@ const router = express.Router();
 const connection = require('../db');
 const authenticateJWT = require('../middleware/authenticateJWT');
 const multer = require('multer');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/');
+// AWS S3 설정
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
 });
+
+// Multer 설정
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 /**
@@ -314,48 +318,45 @@ router.get('/:postId', (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
+router.post('/', authenticateJWT, upload.single('image'), async (req, res) => {
   const { title, content, category, summary } = req.body;
-  const image = req.file ? req.file.path : null;
+  const image = req.file; // 이미지 파일
   if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
 
   const userId = req.user.userId;
-  const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary, thumbnail_img) VALUES (?, ?, ?, ?, ?, ?)';
   
-  connection.beginTransaction((err) => {
-    if (err) return res.status(500).send(err);
-    
-    connection.query(postQuery, [userId, title, content, category, summary, image], (err, result) => {
-      if (err) {
-        return connection.rollback(() => {
-          res.status(500).send(err);
-        });
-      }
-      
+  try {
+    // S3에 파일 업로드
+    const uploadParams = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+      Body: image.buffer,
+    };
+
+    const upload = new Upload({
+      client: s3,
+      params: uploadParams,
+    });
+
+    const result = await upload.done();
+    const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+    const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary, thumbnail_img) VALUES (?, ?, ?, ?, ?, ?)';
+    connection.query(postQuery, [userId, title, content, category, summary, imageUrl], (err, result) => {
+      if (err) return res.status(500).send(err);
       const postId = result.insertId;
       const postListQuery = 'INSERT INTO post_lists (user_id, post_id) VALUES (?, ?)';
       
       connection.query(postListQuery, [userId, postId], (err) => {
-        if (err) {
-          return connection.rollback(() => {
-            res.status(500).send(err);
-          });
-        }
-        
-        connection.commit((err) => {
-          if (err) {
-            return connection.rollback(() => {
-              res.status(500).send(err);
-            });
-          }
-          
-          res.status(200).json({ postId });
-        });
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ postId });
       });
     });
-  });
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
 /**
@@ -414,11 +415,11 @@ router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.put('/:postId', authenticateJWT, upload.single('image'), (req, res) => {
+router.put('/:postId', authenticateJWT, upload.single('image'), async (req, res) => {
   const { postId } = req.params;
   const { title, content, category, summary } = req.body;
-  const image = req.file ? req.file.path : null;
-  
+  const image = req.file; // 이미지 파일
+
   if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
@@ -427,17 +428,36 @@ router.put('/:postId', authenticateJWT, upload.single('image'), (req, res) => {
 
   // Check if the user is the owner of the post
   const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
-  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+  connection.query(checkOwnershipQuery, [postId], async (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length === 0) return res.status(404).send('Post not found');
     if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
 
-    // Update the post
-    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ?, thumbnail_img = ? WHERE post_id = ?';
-    connection.query(updateQuery, [title, content, category, summary, image, postId], (err) => {
-      if (err) return res.status(500).send(err);
-      res.status(200).json({ result: 'OK' });
-    });
+    try {
+      // S3에 파일 업로드
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+        Body: image.buffer,
+      };
+
+      const upload = new Upload({
+        client: s3,
+        params: uploadParams,
+      });
+
+      const result = await upload.done();
+      const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+      // Update the post
+      const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ?, thumbnail_img = ? WHERE post_id = ?';
+      connection.query(updateQuery, [title, content, category, summary, imageUrl, postId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
   });
 });
 

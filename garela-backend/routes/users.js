@@ -4,17 +4,21 @@ const connection = require('../db');
 const jwt = require('jsonwebtoken');
 const authenticateJWT = require('../middleware/authenticateJWT');
 const multer = require('multer');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+// AWS S3 설정
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
 });
+
+// Multer 설정
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 /**
@@ -259,12 +263,29 @@ router.get('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.put('/', authenticateJWT, upload.single('photo'), (req, res) => {
+router.put('/', authenticateJWT, upload.single('photo'), async (req, res) => {
   const userId = req.user.userId; // JWT에서 userId 추출
   const { name, info } = req.body;
   let profile_img;
   if (req.file) {
-    profile_img = req.file.path;
+    try {
+      // S3에 파일 업로드
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `profile_images/${Date.now().toString()}${path.extname(req.file.originalname)}`,
+        Body: req.file.buffer,
+      };
+
+      const upload = new Upload({
+        client: s3,
+        params: uploadParams,
+      });
+
+      const result = await upload.done();
+      profile_img = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+    } catch (err) {
+      return res.status(500).send(err);
+    }
   }
 
   const fields = [];

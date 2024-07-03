@@ -3,17 +3,21 @@ const router = express.Router();
 const connection = require('../db');
 const authenticateJWT = require('../middleware/authenticateJWT');
 const multer = require('multer');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/');
+// AWS S3 설정
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
 });
+
+// Multer 설정
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 /**
@@ -279,20 +283,39 @@ router.get('/:templateId', (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
+router.post('/', authenticateJWT, upload.single('image'), async (req, res) => {
   const { title, content, category } = req.body;
-  const image = req.file ? req.file.path : null;
+  const image = req.file; // 이미지 파일
   if (!title || !content || !category || !image) {
     return res.status(400).send('Missing required fields');
   }
 
   const userId = req.user.userId;
-  const query = 'INSERT INTO templates (user_id, title, content, category, thumbnail_img) VALUES (?, ?, ?, ?, ?)';
+  
+  try {
+    // S3에 파일 업로드
+    const uploadParams = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+      Body: image.buffer,
+    };
 
-  connection.query(query, [userId, title, content, category, image], (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).json({ templateId: result.insertId });
-  });
+    const upload = new Upload({
+      client: s3,
+      params: uploadParams,
+    });
+
+    const result = await upload.done();
+    const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+    const query = 'INSERT INTO templates (user_id, title, content, category, thumbnail_img) VALUES (?, ?, ?, ?, ?)';
+    connection.query(query, [userId, title, content, category, imageUrl], (err, result) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ templateId: result.insertId });
+    });
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
 /**
@@ -348,10 +371,10 @@ router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.put('/:templateId', authenticateJWT, upload.single('image'), (req, res) => {
+router.put('/:templateId', authenticateJWT, upload.single('image'), async (req, res) => {
   const { templateId } = req.params;
   const { title, content, category } = req.body;
-  const image = req.file ? req.file.path : null;
+  const image = req.file; // 이미지 파일
 
   if (!title || !content || !category || !image) {
     return res.status(400).send('Missing required fields');
@@ -361,17 +384,36 @@ router.put('/:templateId', authenticateJWT, upload.single('image'), (req, res) =
 
   // Check if the user is the owner of the template
   const checkOwnershipQuery = 'SELECT user_id FROM templates WHERE template_id = ?';
-  connection.query(checkOwnershipQuery, [templateId], (err, results) => {
+  connection.query(checkOwnershipQuery, [templateId], async (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length === 0) return res.status(404).send('Template not found');
     if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
 
-    // Update the template
-    const updateQuery = 'UPDATE templates SET title = ?, content = ?, category = ?, thumbnail_img = ? WHERE template_id = ?';
-    connection.query(updateQuery, [title, content, category, image, templateId], (err) => {
-      if (err) return res.status(500).send(err);
-      res.status(200).json({ result: 'OK' });
-    });
+    try {
+      // S3에 파일 업로드
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+        Body: image.buffer,
+      };
+
+      const upload = new Upload({
+        client: s3,
+        params: uploadParams,
+      });
+
+      const result = await upload.done();
+      const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+      // Update the template
+      const updateQuery = 'UPDATE templates SET title = ?, content = ?, category = ?, thumbnail_img = ? WHERE template_id = ?';
+      connection.query(updateQuery, [title, content, category, imageUrl, templateId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
   });
 });
 
