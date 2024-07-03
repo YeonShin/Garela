@@ -17,8 +17,6 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *     summary: 게시글 리스트 조회
  *     description: 게시글 리스트를 조회합니다.
  *     tags: [Posts]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: 게시글 리스트 반환
@@ -56,13 +54,11 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *                     type: integer
  *                   subscribed:
  *                     type: boolean
- *       401:
- *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
   
   const query = `
     SELECT 
@@ -105,8 +101,6 @@ router.get('/', authenticateJWT, (req, res) => {
  *     summary: 게시글 상세 정보 조회
  *     description: 특정 게시글의 상세 정보를 조회합니다.
  *     tags: [Posts]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: postId
@@ -170,15 +164,13 @@ router.get('/', authenticateJWT, (req, res) => {
  *                         type: string
  *                       myComment:
  *                         type: boolean
- *       401:
- *         description: Unauthorized
  *       404:
  *         description: 게시글을 찾을 수 없음
  *       500:
  *         description: Internal server error
  */
-router.get('/:postId', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/:postId', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
   const postId = req.params.postId;
 
   const updateViewsQuery = 'UPDATE posts SET views = views + 1 WHERE post_id = ?';

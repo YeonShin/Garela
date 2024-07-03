@@ -17,8 +17,6 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *     summary: 템플릿 리스트 조회
  *     description: 템플릿 리스트를 조회합니다.
  *     tags: [Templates]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: 템플릿 리스트 반환
@@ -50,13 +48,11 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *                     type: integer
  *                   subscribed:
  *                     type: boolean
- *       401:
- *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
 
   const query = `
     SELECT 
@@ -96,8 +92,6 @@ router.get('/', authenticateJWT, (req, res) => {
  *     summary: 템플릿 상세 정보 조회
  *     description: 특정 템플릿의 상세 정보를 조회합니다.
  *     tags: [Templates]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: templateId
@@ -141,15 +135,13 @@ router.get('/', authenticateJWT, (req, res) => {
  *                   type: boolean
  *                 added:
  *                   type: boolean
- *       401:
- *         description: Unauthorized
  *       404:
  *         description: 템플릿을 찾을 수 없음
  *       500:
  *         description: Internal server error
  */
-router.get('/:templateId', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/:templateId', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
   const templateId = req.params.templateId;
 
   const updateViewsQuery = 'UPDATE templates SET views = views + 1 WHERE template_id = ?';
