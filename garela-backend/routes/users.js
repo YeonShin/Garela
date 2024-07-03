@@ -4,17 +4,21 @@ const connection = require('../db');
 const jwt = require('jsonwebtoken');
 const authenticateJWT = require('../middleware/authenticateJWT');
 const multer = require('multer');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+// AWS S3 설정
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
 });
+
+// Multer 설정
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 /**
@@ -194,6 +198,10 @@ router.post('/login', (req, res) => {
  *                         type: string
  *                       category:
  *                         type: string
+ *                       thumbnail_img:
+ *                         type: string
+ *                       is_my_template:
+ *                         type: boolean
  *       400:
  *         description: Missing required fields
  *       500:
@@ -206,10 +214,10 @@ router.get('/', authenticateJWT, (req, res) => {
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', t.template_id, 'title', t.title, 'thumbnailImg', t.thumbnail_img, 'userImg', u.profile_img, 'category', t.category, 'createdAt', t.created_at, 'views', t.views, 'likes', t.likes)) FROM templates t WHERE t.user_id = u.user_id) AS myTemplates,
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('postId', p.post_id, 'title', p.title, 'summary', p.content, 'thumbnailImg', p.thumbnail_img, 'userName', u.name, 'userImg', u.profile_img, 'category', p.category, 'createdAt', p.created_at, 'comments', (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id), 'views', p.views, 'likes', p.likes)) FROM posts p WHERE p.user_id = u.user_id) AS myPosts,
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('userId', f.following_id, 'name', u2.name, 'profileImg', u2.profile_img, 'info', u2.info)) FROM follows f JOIN users u2 ON f.following_id = u2.user_id WHERE f.follower_id = u.user_id) AS followingUsers,
-      (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', tl.template_id, 'title', t2.title, 'category', t2.category, 'thumbnailImg', t2.thumbnail_img, 'isMyTemplate', IF(tl.user_id = u.user_id, 1, 0))) FROM template_lists tl JOIN templates t2 ON tl.template_id = t2.template_id WHERE tl.user_id = u.user_id) AS templateLibrary
+      (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', tl.template_id, 'title', t2.title, 'category', t2.category, 'thumbnailImg', t2.thumbnail_img, 'isMyTemplate', IF(t2.user_id = ?, true, false))) FROM template_library tl JOIN templates t2 ON tl.template_id = t2.template_id WHERE tl.user_id = ?) AS templateLibrary
     FROM users u
     WHERE u.user_id = ?`;
-  connection.query(query, [userId], (err, results) => {
+  connection.query(query, [userId, userId, userId], (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length > 0) {
       res.json(results[0]);
@@ -255,12 +263,29 @@ router.get('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.put('/', authenticateJWT, upload.single('photo'), (req, res) => {
+router.put('/', authenticateJWT, upload.single('photo'), async (req, res) => {
   const userId = req.user.userId; // JWT에서 userId 추출
   const { name, info } = req.body;
   let profile_img;
   if (req.file) {
-    profile_img = req.file.path;
+    try {
+      // S3에 파일 업로드
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `profile_images/${Date.now().toString()}${path.extname(req.file.originalname)}`,
+        Body: req.file.buffer,
+      };
+
+      const upload = new Upload({
+        client: s3,
+        params: uploadParams,
+      });
+
+      const result = await upload.done();
+      profile_img = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+    } catch (err) {
+      return res.status(500).send(err);
+    }
   }
 
   const fields = [];
@@ -344,6 +369,79 @@ router.put('/follow/:userId', authenticateJWT, (req, res) => {
         res.status(200).json({ result: 'OK' });
       });
     }
+  });
+});
+
+/**
+ * @swagger
+ * /users:
+ *   delete:
+ *     summary: 회원 탈퇴
+ *     description: 회원 탈퇴를 합니다.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 회원 탈퇴 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete('/', authenticateJWT, (req, res) => {
+  const userId = req.user.userId;
+
+  const deleteQuery = 'DELETE FROM users WHERE user_id = ?';
+  connection.query(deleteQuery, [userId], (err) => {
+    if (err) return res.status(500).send(err);
+    res.status(200).json({ result: 'OK' });
+  });
+});
+
+/**
+ * @swagger
+ * /users/email:
+ *   get:
+ *     summary: 이메일 중복 확인
+ *     description: 이메일이 이미 가입된 이메일인지 확인합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 이메일 중복 확인 결과 반환
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.get('/email', (req, res) => {
+  const { email } = req.query;
+  if (!email) {
+    return res.status(400).send('Missing email parameter');
+  }
+
+  const checkEmailQuery = 'SELECT * FROM users WHERE email = ?';
+  connection.query(checkEmailQuery, [email], (err, results) => {
+    if (err) return res.status(500).send(err);
+    res.status(200).json({ result: results.length > 0 });
   });
 });
 

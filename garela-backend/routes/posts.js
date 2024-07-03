@@ -2,6 +2,23 @@ const express = require('express');
 const router = express.Router();
 const connection = require('../db');
 const authenticateJWT = require('../middleware/authenticateJWT');
+const multer = require('multer');
+const { S3Client } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
+const path = require('path');
+
+// AWS S3 설정
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
+// Multer 설정
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 /**
  * @swagger
@@ -17,8 +34,6 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *     summary: 게시글 리스트 조회
  *     description: 게시글 리스트를 조회합니다.
  *     tags: [Posts]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: 게시글 리스트 반환
@@ -56,13 +71,11 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *                     type: integer
  *                   subscribed:
  *                     type: boolean
- *       401:
- *         description: Unauthorized
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
   
   const query = `
     SELECT 
@@ -105,8 +118,6 @@ router.get('/', authenticateJWT, (req, res) => {
  *     summary: 게시글 상세 정보 조회
  *     description: 특정 게시글의 상세 정보를 조회합니다.
  *     tags: [Posts]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: postId
@@ -170,15 +181,13 @@ router.get('/', authenticateJWT, (req, res) => {
  *                         type: string
  *                       myComment:
  *                         type: boolean
- *       401:
- *         description: Unauthorized
  *       404:
  *         description: 게시글을 찾을 수 없음
  *       500:
  *         description: Internal server error
  */
-router.get('/:postId', authenticateJWT, (req, res) => {
-  const userId = req.user.userId;
+router.get('/:postId', (req, res) => {
+  const userId = req.user ? req.user.userId : null;
   const postId = req.params.postId;
 
   const updateViewsQuery = 'UPDATE posts SET views = views + 1 WHERE post_id = ?';
@@ -273,7 +282,7 @@ router.get('/:postId', authenticateJWT, (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -281,6 +290,7 @@ router.get('/:postId', authenticateJWT, (req, res) => {
  *               - content
  *               - category
  *               - summary
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -290,6 +300,9 @@ router.get('/:postId', authenticateJWT, (req, res) => {
  *                 type: string
  *               summary:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 게시글 작성 완료
@@ -305,47 +318,45 @@ router.get('/:postId', authenticateJWT, (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.post('/', authenticateJWT, (req, res) => {
+router.post('/', authenticateJWT, upload.single('image'), async (req, res) => {
   const { title, content, category, summary } = req.body;
-  if (!title || !content || !category || !summary) {
+  const image = req.file; // 이미지 파일
+  if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
 
   const userId = req.user.userId;
-  const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary) VALUES (?, ?, ?, ?, ?)';
   
-  connection.beginTransaction((err) => {
-    if (err) return res.status(500).send(err);
-    
-    connection.query(postQuery, [userId, title, content, category, summary], (err, result) => {
-      if (err) {
-        return connection.rollback(() => {
-          res.status(500).send(err);
-        });
-      }
-      
+  try {
+    // S3에 파일 업로드
+    const uploadParams = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+      Body: image.buffer,
+    };
+
+    const upload = new Upload({
+      client: s3,
+      params: uploadParams,
+    });
+
+    const result = await upload.done();
+    const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+    const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary, thumbnail_img) VALUES (?, ?, ?, ?, ?, ?)';
+    connection.query(postQuery, [userId, title, content, category, summary, imageUrl], (err, result) => {
+      if (err) return res.status(500).send(err);
       const postId = result.insertId;
       const postListQuery = 'INSERT INTO post_lists (user_id, post_id) VALUES (?, ?)';
       
       connection.query(postListQuery, [userId, postId], (err) => {
-        if (err) {
-          return connection.rollback(() => {
-            res.status(500).send(err);
-          });
-        }
-        
-        connection.commit((err) => {
-          if (err) {
-            return connection.rollback(() => {
-              res.status(500).send(err);
-            });
-          }
-          
-          res.status(200).json({ postId });
-        });
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ postId });
       });
     });
-  });
+  } catch (err) {
+    res.status(500).send(err);
+  }
 });
 
 /**
@@ -366,7 +377,7 @@ router.post('/', authenticateJWT, (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -374,6 +385,7 @@ router.post('/', authenticateJWT, (req, res) => {
  *               - content
  *               - category
  *               - summary
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -383,6 +395,9 @@ router.post('/', authenticateJWT, (req, res) => {
  *                 type: string
  *               summary:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 게시글 수정 완료
@@ -400,11 +415,12 @@ router.post('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.put('/:postId', authenticateJWT, (req, res) => {
+router.put('/:postId', authenticateJWT, upload.single('image'), async (req, res) => {
   const { postId } = req.params;
   const { title, content, category, summary } = req.body;
-  
-  if (!title || !content || !category || !summary) {
+  const image = req.file; // 이미지 파일
+
+  if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
 
@@ -412,17 +428,36 @@ router.put('/:postId', authenticateJWT, (req, res) => {
 
   // Check if the user is the owner of the post
   const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
-  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+  connection.query(checkOwnershipQuery, [postId], async (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length === 0) return res.status(404).send('Post not found');
     if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
 
-    // Update the post
-    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ? WHERE post_id = ?';
-    connection.query(updateQuery, [title, content, category, summary, postId], (err) => {
-      if (err) return res.status(500).send(err);
-      res.status(200).json({ result: 'OK' });
-    });
+    try {
+      // S3에 파일 업로드
+      const uploadParams = {
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: `images/${Date.now().toString()}${path.extname(image.originalname)}`,
+        Body: image.buffer,
+      };
+
+      const upload = new Upload({
+        client: s3,
+        params: uploadParams,
+      });
+
+      const result = await upload.done();
+      const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+      // Update the post
+      const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ?, thumbnail_img = ? WHERE post_id = ?';
+      connection.query(updateQuery, [title, content, category, summary, imageUrl, postId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    } catch (err) {
+      res.status(500).send(err);
+    }
   });
 });
 
