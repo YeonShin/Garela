@@ -410,4 +410,131 @@ router.delete('/:templateId', authenticateJWT, (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /templates/library/{templateId}:
+ *   put:
+ *     summary: 템플릿 라이브러리에 추가
+ *     description: 템플릿을 라이브러리에 추가하거나 제거합니다.
+ *     tags: [Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 라이브러리 상태 변경 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/library/:templateId', authenticateJWT, (req, res) => {
+  const { templateId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the template is already in the user's library
+  const checkLibraryQuery = 'SELECT * FROM template_library WHERE user_id = ? AND template_id = ?';
+  connection.query(checkLibraryQuery, [userId, templateId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      // If the template is in the library, remove it
+      const removeFromLibraryQuery = 'DELETE FROM template_library WHERE user_id = ? AND template_id = ?';
+      connection.query(removeFromLibraryQuery, [userId, templateId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    } else {
+      // If the template is not in the library, add it
+      const addToLibraryQuery = 'INSERT INTO template_library (user_id, template_id) VALUES (?, ?)';
+      connection.query(addToLibraryQuery, [userId, templateId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    }
+  });
+});
+
+/**
+ * @swagger
+ * /templates/like/{templateId}:
+ *   put:
+ *     summary: 템플릿 좋아요
+ *     description: 템플릿에 좋아요를 누르거나 취소합니다.
+ *     tags: [Templates]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: templateId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 좋아요 상태 변경 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/like/:templateId', authenticateJWT, (req, res) => {
+  const { templateId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user has already liked the template
+  const checkLikeQuery = 'SELECT * FROM likes WHERE user_id = ? AND template_id = ?';
+  connection.query(checkLikeQuery, [userId, templateId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      // If the like exists, remove it (unlike)
+      const unlikeQuery = 'DELETE FROM likes WHERE user_id = ? AND template_id = ?';
+      connection.query(unlikeQuery, [userId, templateId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Decrease the like count on the template
+        const decreaseLikeCountQuery = 'UPDATE templates SET likes = likes - 1 WHERE template_id = ?';
+        connection.query(decreaseLikeCountQuery, [templateId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    } else {
+      // If the like does not exist, add it (like)
+      const likeQuery = 'INSERT INTO likes (user_id, template_id) VALUES (?, ?)';
+      connection.query(likeQuery, [userId, templateId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Increase the like count on the template
+        const increaseLikeCountQuery = 'UPDATE templates SET likes = likes + 1 WHERE template_id = ?';
+        connection.query(increaseLikeCountQuery, [templateId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    }
+  });
+});
+
+
 module.exports = router;

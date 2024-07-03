@@ -194,6 +194,10 @@ router.post('/login', (req, res) => {
  *                         type: string
  *                       category:
  *                         type: string
+ *                       thumbnail_img:
+ *                         type: string
+ *                       is_my_template:
+ *                         type: boolean
  *       400:
  *         description: Missing required fields
  *       500:
@@ -206,10 +210,10 @@ router.get('/', authenticateJWT, (req, res) => {
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', t.template_id, 'title', t.title, 'thumbnailImg', t.thumbnail_img, 'userImg', u.profile_img, 'category', t.category, 'createdAt', t.created_at, 'views', t.views, 'likes', t.likes)) FROM templates t WHERE t.user_id = u.user_id) AS myTemplates,
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('postId', p.post_id, 'title', p.title, 'summary', p.content, 'thumbnailImg', p.thumbnail_img, 'userName', u.name, 'userImg', u.profile_img, 'category', p.category, 'createdAt', p.created_at, 'comments', (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id), 'views', p.views, 'likes', p.likes)) FROM posts p WHERE p.user_id = u.user_id) AS myPosts,
       (SELECT JSON_ARRAYAGG(JSON_OBJECT('userId', f.following_id, 'name', u2.name, 'profileImg', u2.profile_img, 'info', u2.info)) FROM follows f JOIN users u2 ON f.following_id = u2.user_id WHERE f.follower_id = u.user_id) AS followingUsers,
-      (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', tl.template_id, 'title', t2.title, 'category', t2.category, 'thumbnailImg', t2.thumbnail_img, 'isMyTemplate', IF(tl.user_id = u.user_id, 1, 0))) FROM template_lists tl JOIN templates t2 ON tl.template_id = t2.template_id WHERE tl.user_id = u.user_id) AS templateLibrary
+      (SELECT JSON_ARRAYAGG(JSON_OBJECT('templateId', tl.template_id, 'title', t2.title, 'category', t2.category, 'thumbnailImg', t2.thumbnail_img, 'isMyTemplate', IF(t2.user_id = ?, true, false))) FROM template_library tl JOIN templates t2 ON tl.template_id = t2.template_id WHERE tl.user_id = ?) AS templateLibrary
     FROM users u
     WHERE u.user_id = ?`;
-  connection.query(query, [userId], (err, results) => {
+  connection.query(query, [userId, userId, userId], (err, results) => {
     if (err) return res.status(500).send(err);
     if (results.length > 0) {
       res.json(results[0]);
