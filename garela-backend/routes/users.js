@@ -351,5 +351,78 @@ router.put('/follow/:userId', authenticateJWT, (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /users:
+ *   delete:
+ *     summary: 회원 탈퇴
+ *     description: 회원 탈퇴를 합니다.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 회원 탈퇴 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete('/', authenticateJWT, (req, res) => {
+  const userId = req.user.userId;
+
+  const deleteQuery = 'DELETE FROM users WHERE user_id = ?';
+  connection.query(deleteQuery, [userId], (err) => {
+    if (err) return res.status(500).send(err);
+    res.status(200).json({ result: 'OK' });
+  });
+});
+
+/**
+ * @swagger
+ * /users/email:
+ *   get:
+ *     summary: 이메일 중복 확인
+ *     description: 이메일이 이미 가입된 이메일인지 확인합니다.
+ *     tags: [Users]
+ *     parameters:
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 이메일 중복 확인 결과 반환
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: boolean
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.get('/email', (req, res) => {
+  const { email } = req.query;
+  if (!email) {
+    return res.status(400).send('Missing email parameter');
+  }
+
+  const checkEmailQuery = 'SELECT * FROM users WHERE email = ?';
+  connection.query(checkEmailQuery, [email], (err, results) => {
+    if (err) return res.status(500).send(err);
+    res.status(200).json({ result: results.length > 0 });
+  });
+});
+
 
 module.exports = router;
