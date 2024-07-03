@@ -472,4 +472,73 @@ router.delete('/:postId', authenticateJWT, (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /posts/like/{postId}:
+ *   put:
+ *     summary: 게시글 좋아요
+ *     description: 게시글에 좋아요를 누릅니다. 한 번 더 누르면 좋아요가 취소됩니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 좋아요 상태 변경 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/like/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user has already liked the post
+  const checkLikeQuery = 'SELECT * FROM likes WHERE user_id = ? AND post_id = ?';
+  connection.query(checkLikeQuery, [userId, postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      // If the like exists, remove it (unlike)
+      const unlikeQuery = 'DELETE FROM likes WHERE user_id = ? AND post_id = ?';
+      connection.query(unlikeQuery, [userId, postId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Decrease the like count on the post
+        const decreaseLikeCountQuery = 'UPDATE posts SET likes = likes - 1 WHERE post_id = ?';
+        connection.query(decreaseLikeCountQuery, [postId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    } else {
+      // If the like does not exist, add it (like)
+      const likeQuery = 'INSERT INTO likes (user_id, post_id) VALUES (?, ?)';
+      connection.query(likeQuery, [userId, postId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Increase the like count on the post
+        const increaseLikeCountQuery = 'UPDATE posts SET likes = likes + 1 WHERE post_id = ?';
+        connection.query(increaseLikeCountQuery, [postId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    }
+  });
+});
+
 module.exports = router;
