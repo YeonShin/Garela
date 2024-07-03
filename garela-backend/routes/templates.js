@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const connection = require('../db');
 const authenticateJWT = require('../middleware/authenticateJWT');
+const multer = require('multer');
+const path = require('path');
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 /**
  * @swagger
@@ -233,13 +246,14 @@ router.get('/:templateId', (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - title
  *               - content
  *               - category
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -247,6 +261,9 @@ router.get('/:templateId', (req, res) => {
  *                 type: string
  *               category:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 템플릿 작성 완료
@@ -262,16 +279,17 @@ router.get('/:templateId', (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.post('/', authenticateJWT, (req, res) => {
+router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
   const { title, content, category } = req.body;
-  if (!title || !content || !category) {
+  const image = req.file ? req.file.path : null;
+  if (!title || !content || !category || !image) {
     return res.status(400).send('Missing required fields');
   }
 
   const userId = req.user.userId;
-  const query = 'INSERT INTO templates (user_id, title, content, category) VALUES (?, ?, ?, ?)';
+  const query = 'INSERT INTO templates (user_id, title, content, category, thumbnail_img) VALUES (?, ?, ?, ?, ?)';
 
-  connection.query(query, [userId, title, content, category], (err, result) => {
+  connection.query(query, [userId, title, content, category, image], (err, result) => {
     if (err) return res.status(500).send(err);
     res.status(200).json({ templateId: result.insertId });
   });
@@ -295,13 +313,14 @@ router.post('/', authenticateJWT, (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
  *               - title
  *               - content
  *               - category
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -309,6 +328,9 @@ router.post('/', authenticateJWT, (req, res) => {
  *                 type: string
  *               category:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 템플릿 수정 완료
@@ -326,11 +348,12 @@ router.post('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.put('/:templateId', authenticateJWT, (req, res) => {
+router.put('/:templateId', authenticateJWT, upload.single('image'), (req, res) => {
   const { templateId } = req.params;
   const { title, content, category } = req.body;
+  const image = req.file ? req.file.path : null;
 
-  if (!title || !content || !category) {
+  if (!title || !content || !category || !image) {
     return res.status(400).send('Missing required fields');
   }
 
@@ -344,8 +367,8 @@ router.put('/:templateId', authenticateJWT, (req, res) => {
     if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
 
     // Update the template
-    const updateQuery = 'UPDATE templates SET title = ?, content = ?, category = ? WHERE template_id = ?';
-    connection.query(updateQuery, [title, content, category, templateId], (err) => {
+    const updateQuery = 'UPDATE templates SET title = ?, content = ?, category = ?, thumbnail_img = ? WHERE template_id = ?';
+    connection.query(updateQuery, [title, content, category, image, templateId], (err) => {
       if (err) return res.status(500).send(err);
       res.status(200).json({ result: 'OK' });
     });

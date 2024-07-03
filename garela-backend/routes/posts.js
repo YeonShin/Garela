@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const connection = require('../db');
 const authenticateJWT = require('../middleware/authenticateJWT');
+const multer = require('multer');
+const path = require('path');
+
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 /**
  * @swagger
@@ -265,7 +278,7 @@ router.get('/:postId', (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -273,6 +286,7 @@ router.get('/:postId', (req, res) => {
  *               - content
  *               - category
  *               - summary
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -282,6 +296,9 @@ router.get('/:postId', (req, res) => {
  *                 type: string
  *               summary:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 게시글 작성 완료
@@ -297,19 +314,20 @@ router.get('/:postId', (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.post('/', authenticateJWT, (req, res) => {
+router.post('/', authenticateJWT, upload.single('image'), (req, res) => {
   const { title, content, category, summary } = req.body;
-  if (!title || !content || !category || !summary) {
+  const image = req.file ? req.file.path : null;
+  if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
 
   const userId = req.user.userId;
-  const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary) VALUES (?, ?, ?, ?, ?)';
+  const postQuery = 'INSERT INTO posts (user_id, title, content, category, summary, thumbnail_img) VALUES (?, ?, ?, ?, ?, ?)';
   
   connection.beginTransaction((err) => {
     if (err) return res.status(500).send(err);
     
-    connection.query(postQuery, [userId, title, content, category, summary], (err, result) => {
+    connection.query(postQuery, [userId, title, content, category, summary, image], (err, result) => {
       if (err) {
         return connection.rollback(() => {
           res.status(500).send(err);
@@ -358,7 +376,7 @@ router.post('/', authenticateJWT, (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -366,6 +384,7 @@ router.post('/', authenticateJWT, (req, res) => {
  *               - content
  *               - category
  *               - summary
+ *               - image
  *             properties:
  *               title:
  *                 type: string
@@ -375,6 +394,9 @@ router.post('/', authenticateJWT, (req, res) => {
  *                 type: string
  *               summary:
  *                 type: string
+ *               image:
+ *                 type: string
+ *                 format: binary
  *     responses:
  *       200:
  *         description: 게시글 수정 완료
@@ -392,11 +414,12 @@ router.post('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: 서버 오류
  */
-router.put('/:postId', authenticateJWT, (req, res) => {
+router.put('/:postId', authenticateJWT, upload.single('image'), (req, res) => {
   const { postId } = req.params;
   const { title, content, category, summary } = req.body;
+  const image = req.file ? req.file.path : null;
   
-  if (!title || !content || !category || !summary) {
+  if (!title || !content || !category || !summary || !image) {
     return res.status(400).send('Missing required fields');
   }
 
@@ -410,8 +433,8 @@ router.put('/:postId', authenticateJWT, (req, res) => {
     if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
 
     // Update the post
-    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ? WHERE post_id = ?';
-    connection.query(updateQuery, [title, content, category, summary, postId], (err) => {
+    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ?, thumbnail_img = ? WHERE post_id = ?';
+    connection.query(updateQuery, [title, content, category, summary, image, postId], (err) => {
       if (err) return res.status(500).send(err);
       res.status(200).json({ result: 'OK' });
     });
