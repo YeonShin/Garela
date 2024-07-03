@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const OuterContainer = styled.div`
   display: flex;
@@ -137,12 +138,31 @@ const Login: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 제출 로직 추가
-    console.log("Form Data:", formData);
-    localStorage.setItem("token", "test");
-    navigate("/");
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/users/login",
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        alert("로그인에 성공했습니다.");
+        localStorage.setItem("token", response.data.token);
+        navigate("/");
+      }
+    } catch (error) {
+      console.error("로그인에 실패했습니다.", error);
+      alert("로그인에 실패했습니다.");
+    }
   };
 
   return (
