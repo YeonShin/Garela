@@ -37,6 +37,8 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *                     type: string
  *                   thumbnailImg:
  *                     type: string
+ *                   userId:
+ *                     type: integer
  *                   userName:
  *                     type: string
  *                   userImg:
@@ -68,6 +70,7 @@ router.get('/', authenticateJWT, (req, res) => {
       p.title, 
       p.content AS summary, 
       p.thumbnail_img AS thumbnailImg, 
+      p.user_id AS userId,
       u.name AS userName, 
       u.profile_img AS userImg, 
       p.category, 
@@ -124,6 +127,8 @@ router.get('/', authenticateJWT, (req, res) => {
  *                   type: string
  *                 content:
  *                   type: string
+ *                 userId:
+ *                   type: integer
  *                 userName:
  *                   type: string
  *                 userImg:
@@ -193,6 +198,7 @@ router.get('/:postId', authenticateJWT, (req, res) => {
           p.post_id AS postId, 
           p.title, 
           p.content, 
+          p.user_id AS userId,
           u.name AS userName, 
           u.profile_img AS userImg, 
           u.info AS userInfo, 
@@ -419,8 +425,6 @@ router.put('/:postId', authenticateJWT, (req, res) => {
     });
   });
 });
-
-
 
 /**
  * @swagger
