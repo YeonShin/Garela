@@ -31,8 +31,11 @@ const swaggerDefinition = {
     {
       name: 'Users',
       description: 'User related endpoints'
+    },
+    {
+      name: 'Posts',
+      description: '게시글 관련 endpoints'
     }
-    // Add other tags here
   ]
 };
 
