@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const { swaggerUi, swaggerDocs } = require('./swagger');
 const usersRouter = require('./routes/users'); // Users router
 const postsRouter = require('./routes/posts'); // Posts router
@@ -8,6 +9,7 @@ const templatesRouter = require('./routes/templates'); // Templates router
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/users', usersRouter);
