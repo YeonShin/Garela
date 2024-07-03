@@ -290,4 +290,62 @@ router.put('/', authenticateJWT, upload.single('photo'), (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /users/follow/{userId}:
+ *   put:
+ *     summary: 유저 팔로우
+ *     description: 유저를 팔로우하거나 팔로우를 취소합니다.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 팔로우 상태 변경 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/follow/:userId', authenticateJWT, (req, res) => {
+  const { userId } = req.params;  // 팔로우 대상 사용자 ID
+  const followerId = req.user.userId;  // JWT에서 추출한 현재 사용자 ID
+
+  // Check if the user is already following the target user
+  const checkFollowQuery = 'SELECT * FROM follows WHERE follower_id = ? AND following_id = ?';
+  connection.query(checkFollowQuery, [followerId, userId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      // If the follow exists, remove it (unfollow)
+      const unfollowQuery = 'DELETE FROM follows WHERE follower_id = ? AND following_id = ?';
+      connection.query(unfollowQuery, [followerId, userId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    } else {
+      // If the follow does not exist, add it (follow)
+      const followQuery = 'INSERT INTO follows (follower_id, following_id) VALUES (?, ?)';
+      connection.query(followQuery, [followerId, userId], (err) => {
+        if (err) return res.status(500).send(err);
+        res.status(200).json({ result: 'OK' });
+      });
+    }
+  });
+});
+
+
 module.exports = router;

@@ -37,6 +37,8 @@ const authenticateJWT = require('../middleware/authenticateJWT');
  *                     type: string
  *                   thumbnailImg:
  *                     type: string
+ *                   userId:
+ *                     type: integer
  *                   userName:
  *                     type: string
  *                   userImg:
@@ -68,6 +70,7 @@ router.get('/', authenticateJWT, (req, res) => {
       p.title, 
       p.content AS summary, 
       p.thumbnail_img AS thumbnailImg, 
+      p.user_id AS userId,
       u.name AS userName, 
       u.profile_img AS userImg, 
       p.category, 
@@ -124,6 +127,8 @@ router.get('/', authenticateJWT, (req, res) => {
  *                   type: string
  *                 content:
  *                   type: string
+ *                 userId:
+ *                   type: integer
  *                 userName:
  *                   type: string
  *                 userImg:
@@ -193,6 +198,7 @@ router.get('/:postId', authenticateJWT, (req, res) => {
           p.post_id AS postId, 
           p.title, 
           p.content, 
+          p.user_id AS userId,
           u.name AS userName, 
           u.profile_img AS userImg, 
           u.info AS userInfo, 
@@ -256,13 +262,6 @@ router.get('/:postId', authenticateJWT, (req, res) => {
     });
   });
 });
-
-/**
- * @swagger
- * tags:
- *   name: Posts
- *   description: 게시글 관련 API 입니다.
- */
 
 /**
  * @swagger
@@ -346,6 +345,203 @@ router.post('/', authenticateJWT, (req, res) => {
         });
       });
     });
+  });
+});
+
+/**
+ * @swagger
+ * /posts/{postId}:
+ *   put:
+ *     summary: 게시글 수정
+ *     description: 게시글을 수정합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - content
+ *               - category
+ *               - summary
+ *             properties:
+ *               title:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               category:
+ *                 type: string
+ *               summary:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 게시글 수정 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 필수 입력 항목이 누락됨
+ *       403:
+ *         description: 권한 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const { title, content, category, summary } = req.body;
+  
+  if (!title || !content || !category || !summary) {
+    return res.status(400).send('Missing required fields');
+  }
+
+  const userId = req.user.userId;
+
+  // Check if the user is the owner of the post
+  const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
+  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+    if (results.length === 0) return res.status(404).send('Post not found');
+    if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
+
+    // Update the post
+    const updateQuery = 'UPDATE posts SET title = ?, content = ?, category = ?, summary = ? WHERE post_id = ?';
+    connection.query(updateQuery, [title, content, category, summary, postId], (err) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ result: 'OK' });
+    });
+  });
+});
+
+/**
+ * @swagger
+ * /posts/{postId}:
+ *   delete:
+ *     summary: 게시글 삭제
+ *     description: 게시글을 삭제합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 게시글 삭제 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       403:
+ *         description: 권한 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete('/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user is the owner of the post
+  const checkOwnershipQuery = 'SELECT user_id FROM posts WHERE post_id = ?';
+  connection.query(checkOwnershipQuery, [postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+    if (results.length === 0) return res.status(404).send('Post not found');
+    if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
+
+    // Delete the post
+    const deleteQuery = 'DELETE FROM posts WHERE post_id = ?';
+    connection.query(deleteQuery, [postId], (err) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ result: 'OK' });
+    });
+  });
+});
+
+/**
+ * @swagger
+ * /posts/like/{postId}:
+ *   put:
+ *     summary: 게시글 좋아요
+ *     description: 게시글에 좋아요를 누릅니다. 한 번 더 누르면 좋아요가 취소됩니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 좋아요 상태 변경 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.put('/like/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user has already liked the post
+  const checkLikeQuery = 'SELECT * FROM likes WHERE user_id = ? AND post_id = ?';
+  connection.query(checkLikeQuery, [userId, postId], (err, results) => {
+    if (err) return res.status(500).send(err);
+
+    if (results.length > 0) {
+      // If the like exists, remove it (unlike)
+      const unlikeQuery = 'DELETE FROM likes WHERE user_id = ? AND post_id = ?';
+      connection.query(unlikeQuery, [userId, postId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Decrease the like count on the post
+        const decreaseLikeCountQuery = 'UPDATE posts SET likes = likes - 1 WHERE post_id = ?';
+        connection.query(decreaseLikeCountQuery, [postId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    } else {
+      // If the like does not exist, add it (like)
+      const likeQuery = 'INSERT INTO likes (user_id, post_id) VALUES (?, ?)';
+      connection.query(likeQuery, [userId, postId], (err) => {
+        if (err) return res.status(500).send(err);
+
+        // Increase the like count on the post
+        const increaseLikeCountQuery = 'UPDATE posts SET likes = likes + 1 WHERE post_id = ?';
+        connection.query(increaseLikeCountQuery, [postId], (err) => {
+          if (err) return res.status(500).send(err);
+          res.status(200).json({ result: 'OK' });
+        });
+      });
+    }
   });
 });
 
