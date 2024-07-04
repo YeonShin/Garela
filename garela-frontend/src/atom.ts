@@ -106,7 +106,7 @@ export interface CommentType {
   userName : string;
   createdAt : Date;
   content : string;
-  myComment : boolean;
+  myComment : number;
 }
 
 export interface TemplateType {
@@ -149,4 +149,19 @@ export const postEditorState = atom({
 export const postTitleState = atom({
   key: "postTitleState",
   default: "",
+});
+
+export const postCategoryState = atom({
+  key: "postCategoryState",
+  default : ""
+});
+
+export const postSummaryState = atom({
+  key: "postSummaryState",
+  default: "",
+});
+
+export const postFileState = atom<File | null> ({
+  key : "postFileState",
+  default : null
 });

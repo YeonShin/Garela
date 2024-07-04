@@ -20,6 +20,8 @@ import Posts from "./components/mypage/Posts";
 import Templates from "./components/mypage/Templates";
 import Follows from "./components/mypage/Follows";
 import TemplateLibrary from "./components/mypage/TemplateLibrary";
+import EditPost from "./components/home/EditPost";
+import Edit from "./screen/Edit";
 
 const router = createBrowserRouter([
   {
@@ -62,6 +64,10 @@ const router = createBrowserRouter([
             path: ":postId",
             element: <PostDetail />
           },
+          {
+            path: "edit/:postId",
+            element : <EditPost />
+          }
         ]
       },
       {
@@ -108,6 +114,16 @@ const router = createBrowserRouter([
         path: "template",
         element: <CreateTemplate />
       }
+    ]
+  },
+  {
+    path: "edit",
+    element: <Edit />,
+    children: [
+      {
+        path: "post/:postId",
+        element: <EditPost />
+      },
     ]
   }
 ]);

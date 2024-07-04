@@ -6,7 +6,13 @@ import { formatTimeAgo } from "../../Util";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import MoreButtonImg from "../../imgs/moreButton.png";
 import ProfileImg from "../../imgs/profile.jpg";
-import { CommentType, myInfoState, PostType, UserInfoType } from "../../atom";
+import {
+  CommentType,
+  modeState,
+  myInfoState,
+  PostType,
+  UserInfoType,
+} from "../../atom";
 import { useRecoilState } from "recoil";
 
 const Container = styled.div`
@@ -61,6 +67,17 @@ const ContentImage = styled.img`
 
 const Content = styled.div`
   margin-bottom: 20px;
+  img {
+    width: 100%;
+    max-height: 100%; // 원하는 최대 높이로 조절
+    object-fit: cover;
+    margin-bottom: 20px;
+    border-radius: 10px;
+  }
+  iframe {
+    width: 100%;
+    height: 300px;
+  }
 `;
 
 const AuthorInfo = styled.div`
@@ -197,8 +214,11 @@ const PostDetail: React.FC = () => {
   const [newComment, setNewComment] = useState("");
   const [comments, setComments] = useState<CommentType[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showCommentDropdown, setShowCommentDropdown] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<number | null>(null);
   const [selectedComment, setSelectedComment] = useState<number | null>(null);
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+  const [mode, setMode] = useRecoilState(modeState);
 
   useEffect(() => {
     getUserInfo();
@@ -245,9 +265,14 @@ const PostDetail: React.FC = () => {
     }
   };
 
-  const toggleDropdown = (commentId: number | null) => {
-    setSelectedComment(commentId);
+  const toggleDropdown = (postId: number | null) => {
+    setSelectedPost(postId);
     setShowDropdown((prev) => !prev);
+  };
+
+  const toggleCommentDropdown = (commentId: number | null) => {
+    setSelectedComment(commentId);
+    setShowCommentDropdown((prev) => !prev);
   };
 
   const handleFollow = async () => {
@@ -289,20 +314,73 @@ const PostDetail: React.FC = () => {
     setNewComment(e.target.value);
   };
 
-  const handleCommentSubmit = () => {
-    if (!post) return;
+  const handleCommentSubmit = async () => {
+    if (!newComment) return;
+    try {
+      await axios.post(
+        `http://localhost:5000/posts/comment/${postId}`,
+        {
+          content: newComment,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setNewComment("");
+      const response = await axios.get(
+        `http://localhost:5000/posts/${postId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setComments(response.data.commentList);
+    } catch (error) {
+      console.error("Failed to submit comment", error);
+    }
+  };
 
-    const newCommentData = {
-      commentId: comments.length + 1,
-      userImg: ProfileImg,
-      userName: "CurrentUser",
-      createdAt: new Date(),
-      content: newComment,
-      myComment: true,
-    };
+  const handleEditPost = () => {
+    navigate(`/edit/post/${postId}`);
+    setMode("editPost");
+  };
 
-    setComments([...comments, newCommentData]);
-    setNewComment("");
+  const handleDeletePost = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/posts/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      navigate("/home/board");
+    } catch (error) {
+      console.error("Failed to delete post", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await axios.delete(`http://localhost:5000/posts/comment/${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const response = await axios.get(
+        `http://localhost:5000/posts/${postId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setComments(response.data.commentList);
+    } catch (error) {
+      console.error("Failed to delete comment", error);
+    }
   };
 
   if (!post) return <div>Loading...</div>;
@@ -326,10 +404,10 @@ const PostDetail: React.FC = () => {
               src={MoreButtonImg}
               onClick={() => toggleDropdown(post.userId)}
             />
-            {showDropdown && selectedComment === post.userId && (
+            {showDropdown && selectedPost === post.userId && (
               <DropdownMenu>
-                <DropdownItem>수정</DropdownItem>
-                <DropdownItem>삭제</DropdownItem>
+                <DropdownItem onClick={handleEditPost}>수정</DropdownItem>
+                <DropdownItem onClick={handleDeletePost}>삭제</DropdownItem>
               </DropdownMenu>
             )}
           </DropdownContainer>
@@ -390,19 +468,42 @@ const PostDetail: React.FC = () => {
       <CommentList>
         {comments !== null &&
           comments.map((comment) => (
-            <CommentItem key={comment.commentId}>
-              <ProfileImage
-                src={comment.userImg ? comment.userImg : BasicProfileImg}
-                alt="Profile"
-              />
-              <CommentContent>
-                <UserName>{comment.userName}</UserName>
-                <PostMeta>
-                  {formatTimeAgo(new Date(comment.createdAt))}
-                </PostMeta>
-                <div>{comment.content}</div>
-              </CommentContent>
-            </CommentItem>
+            <div key={comment.commentId}>
+              <CommentItem>
+                <ProfileImage
+                  src={comment.userImg ? comment.userImg : BasicProfileImg}
+                  alt="Profile"
+                />
+                <CommentContent>
+                  <UserName>{comment.userName}</UserName>
+                  <PostMeta>
+                    {formatTimeAgo(new Date(comment.createdAt))}
+                  </PostMeta>
+                  <div>{comment.content}</div>
+                </CommentContent>
+                {comment.myComment === 1 && (
+                  <DropdownContainer>
+                    <MoreButton
+                      src={MoreButtonImg}
+                      onClick={() => toggleCommentDropdown(comment.commentId)}
+                    />
+                    {showCommentDropdown &&
+                      selectedComment === comment.commentId && (
+                        <DropdownMenu>
+                          <DropdownItem
+                            onClick={() =>
+                              handleDeleteComment(comment.commentId)
+                            }
+                          >
+                            삭제
+                          </DropdownItem>
+                        </DropdownMenu>
+                      )}
+                  </DropdownContainer>
+                )}
+              </CommentItem>
+              <Divider />
+            </div>
           ))}
       </CommentList>
     </Container>
