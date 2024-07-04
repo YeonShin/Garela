@@ -308,15 +308,26 @@ router.post('/', authenticateJWT, upload.single('image'), async (req, res) => {
     const result = await upload.done();
     const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
 
+    // 템플릿 삽입
     const query = 'INSERT INTO templates (user_id, title, content, category, thumbnail_img) VALUES (?, ?, ?, ?, ?)';
     connection.query(query, [userId, title, content, category, imageUrl], (err, result) => {
       if (err) return res.status(500).send(err);
-      res.status(200).json({ templateId: result.insertId });
+
+      const templateId = result.insertId;
+
+      // 작성된 템플릿을 template_library에 추가
+      const libraryQuery = 'INSERT INTO template_library (user_id, template_id) VALUES (?, ?)';
+      connection.query(libraryQuery, [userId, templateId], (libraryErr) => {
+        if (libraryErr) return res.status(500).send(libraryErr);
+        
+        res.status(200).json({ templateId });
+      });
     });
   } catch (err) {
     res.status(500).send(err);
   }
 });
+
 
 /**
  * @swagger
