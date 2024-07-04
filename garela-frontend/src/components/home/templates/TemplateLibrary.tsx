@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+// TemplateLibrary component
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import TemplateImg from "../../../imgs/postImg.jpg";
+import { useRecoilState } from 'recoil';
+import { applyTemplateIdState, myInfoState, UserInfoType } from '../../../atom';
+import noImage from "../../../imgs/noResult.jpg";
+import axios from 'axios';
 
 const DropdownMenuTemplate = styled.div`
   position: absolute;
@@ -29,6 +33,7 @@ const Tab = styled.div<{ active: boolean }>`
 `;
 
 const TemplateList = styled.div`
+  min-height: 400px;
   max-height: 400px;
   overflow-y: auto;
 `;
@@ -50,6 +55,7 @@ const TemplateImage = styled.img`
   height: 50px;
   object-fit: cover;
   margin-right: 10px;
+  border-radius: 5px;
 `;
 
 const TemplateDetails = styled.div`
@@ -66,15 +72,32 @@ const TemplateTitle = styled.div`
   font-weight: bold;
 `;
 
-const templates = [
-  { id: 1, category: '#Category', title: 'Template Title 1', thumbnailImg: TemplateImg, content: '<h1>Template 1</h1><p>This is the content of template 1.</p>' },
-  { id: 2, category: '#Category', title: 'Template Title 2', thumbnailImg: TemplateImg, content: '<h1>Template 2</h1><p>This is the content of template 2.</p>' },
-  { id: 3, category: '#Category', title: 'Template Title 3', thumbnailImg: TemplateImg, content: '<h1>Template 3</h1><p>This is the content of template 3.</p>' },
-];
-
-const TemplateLibrary: React.FC<{ onSelectTemplate: (template: any) => void }> = ({ onSelectTemplate }) => {
+const TemplateLibrary: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Subscribed' | 'MyTemplate'>('Subscribed');
-  const filteredTemplates = templates; // 필터링 로직은 필요에 따라 추가
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+  const [applyTemplateId, setApplyTemplateId] = useRecoilState<number | undefined>(applyTemplateIdState);
+
+  useEffect(() => {
+    getUserInfo();
+  }, []);
+
+  const getUserInfo = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const userResponse = await axios.get("http://localhost:5000/users", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (userResponse.status == 200) {
+        setUserInfo(userResponse.data);
+      }
+    } catch (error) {
+      console.error("유저 정보 조회에 실패했습니다.", error);
+    }
+  };
 
   return (
     <DropdownMenuTemplate>
@@ -83,19 +106,17 @@ const TemplateLibrary: React.FC<{ onSelectTemplate: (template: any) => void }> =
           active={activeTab === "Subscribed"}
           onClick={() => setActiveTab("Subscribed")}
         >
-          Subscribed
-        </Tab>
-        <Tab
-          active={activeTab === "MyTemplate"}
-          onClick={() => setActiveTab("MyTemplate")}
-        >
-          My Template
+          Template Library
         </Tab>
       </Tabs>
       <TemplateList>
-        {filteredTemplates.map((template) => (
-          <TemplateItem key={template.id} onClick={() => onSelectTemplate(template)}>
-            <TemplateImage src={template.thumbnailImg} alt="Template" />
+        {userInfo.templateLibrary && userInfo.templateLibrary.map((template) => (
+          <TemplateItem key={template.templateId} onClick={() => {
+            if (window.confirm('Do you want to apply this template?')) {
+              setApplyTemplateId(template.templateId);
+            }
+          }}>
+            <TemplateImage src={template.thumbnailImg ? template.thumbnailImg : noImage} alt="Template" />
             <TemplateDetails>
               <TemplateCategory>{template.category}</TemplateCategory>
               <TemplateTitle>{template.title}</TemplateTitle>

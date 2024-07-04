@@ -11,6 +11,7 @@ import {
   modeState,
   myInfoState,
   PostType,
+  selectedPostIdState,
   UserInfoType,
 } from "../../atom";
 import { useRecoilState } from "recoil";
@@ -18,6 +19,7 @@ import { useRecoilState } from "recoil";
 const Container = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 74vh;
 `;
 
 const Header = styled.div`
@@ -219,6 +221,7 @@ const PostDetail: React.FC = () => {
   const [selectedComment, setSelectedComment] = useState<number | null>(null);
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
   const [mode, setMode] = useRecoilState(modeState);
+  const [selectedPostId, setSelectedPostId] = useRecoilState<number | undefined>(selectedPostIdState);
 
   useEffect(() => {
     getUserInfo();
@@ -346,6 +349,7 @@ const PostDetail: React.FC = () => {
 
   const handleEditPost = () => {
     navigate(`/edit/post/${postId}`);
+    setSelectedPostId(post?.postId)
     setMode("editPost");
   };
 

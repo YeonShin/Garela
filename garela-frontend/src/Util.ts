@@ -40,4 +40,3 @@ export const formatTimeAgo = (date: Date): string => {
   }
   return `${Math.floor(seconds)} second${seconds !== 1 ? "s" : ""} ago`;
 };
-

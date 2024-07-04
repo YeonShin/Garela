@@ -5,7 +5,15 @@ import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { filterState, PostListType, selectedCategoryState } from "../../atom";
+import noImage from "../../imgs/noResult.jpg";
+
+import {
+  filterState,
+  myInfoState,
+  PostListType,
+  selectedCategoryState,
+  UserInfoType,
+} from "../../atom";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -153,6 +161,7 @@ const PostList: React.FC = () => {
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
   const [posts, setPosts] = useState<PostListType[]>([]);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -198,8 +207,15 @@ const PostList: React.FC = () => {
   return (
     <PostContainer>
       <PostCreationForm>
-        <ProfileImage src={ProfileImg} alt="Profile" />
-        <Input type="text" placeholder="Write your post" disabled />
+        <ProfileImage
+          src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg}
+          alt="Profile"
+        />
+        <Input
+          type="text"
+          placeholder="Write your post"
+          onClick={() => navigate("/create/post")}
+        />
       </PostCreationForm>
       <PostFilters>
         <FilterLink active={filter === "All"} onClick={() => setFilter("All")}>
@@ -219,8 +235,14 @@ const PostList: React.FC = () => {
         </FilterLink>
       </PostFilters>
       <Divider />
+      {filteredPosts.length === 0 && (
+        <div style={{ minHeight: "60vh" }}>작성된 게시글이 없습니다</div>
+      )}
       {filteredPosts.map((post) => (
-        <PostItem key={post.postId} onClick={() => navigate(`/home/board/${post.postId}`)}>
+        <PostItem
+          key={post.postId}
+          onClick={() => navigate(`/home/board/${post.postId}`)}
+        >
           <PostHeader>
             <ProfileImage
               src={post.userImg ? post.userImg : BasicProfileImg}
@@ -235,7 +257,7 @@ const PostList: React.FC = () => {
           </PostHeader>
           <PostContent>
             <PostImage
-              src={post.thumbnailImg ? post.thumbnailImg : postImg}
+              src={post.thumbnailImg ? post.thumbnailImg : noImage}
               alt="Post"
             />
             <PostInfo>

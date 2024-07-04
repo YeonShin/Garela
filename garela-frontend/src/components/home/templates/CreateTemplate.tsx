@@ -1,9 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState } from "../../../atom";
+import { applyTemplateIdState, postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState } from "../../../atom";
 import axios from "axios";
 
 // Define the Divider Blot
@@ -256,6 +256,25 @@ const CreateTemplate: React.FC = () => {
   const [file, setFile] = useRecoilState<File | null>(postFileState);
   const quillRef = useRef<ReactQuill | null>(null);
   
+  const [applyTemplateId, setApplyTemplateId] = useRecoilState<number | undefined>(applyTemplateIdState);
+
+
+  useEffect(() => {
+    if (applyTemplateId === 0) {
+      return ;
+    }
+    const fetchTemplate = async () => {
+      const response = await axios.get(`http://localhost:5000/templates/${applyTemplateId}`, {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      setEditorState(response.data.content);
+    }
+    fetchTemplate();
+    setApplyTemplateId(0);
+  }, [applyTemplateId])
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files ? e.target.files[0] : null;
     setFile(selectedFile);

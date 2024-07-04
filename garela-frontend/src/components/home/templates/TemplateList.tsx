@@ -6,10 +6,11 @@ import templateImg from "../../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../../Util";
 import ProfileImg from "../../../imgs/profile.jpg";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { TemplateListType, TemplateType, filterState, selectedCategoryState } from "../../../atom";
+import { TemplateListType, TemplateType, UserInfoType, filterState, myInfoState, selectedCategoryState } from "../../../atom";
 import TemplateDetail from "./TemplateDetail";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import noImage from "../../../imgs/noResult.jpg";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -159,6 +160,8 @@ const TemplateList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
   const [templates, setTemplates] = useState<TemplateListType[]>([]);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+
   const fetchTemplates = async () => {
     try {
       const response = await axios.get("http://localhost:5000/templates", {
@@ -211,8 +214,8 @@ const TemplateList: React.FC = () => {
   return (
     <BodyContainer>
       <TemplateCreationForm>
-        <ProfileImage src={ProfileImg} alt="Profile" />
-        <Input type="text" placeholder="Write your post" disabled />
+        <ProfileImage src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg} alt="Profile" />
+        <Input type="text" placeholder="Write your post" onClick={() => navigate("/create/template")} />
       </TemplateCreationForm>
       <TemplateFilters>
         <FilterLink active={filter === "All"} onClick={() => setFilter("All")}>
@@ -233,10 +236,13 @@ const TemplateList: React.FC = () => {
       </TemplateFilters>
       <Divider />
       <TemplateContainer>
+        {filteredTemplates.length === 0 && (
+          <div style={{minHeight: "60vh"}}>작성된 템플릿이 없습니다</div>
+        )}
         {filteredTemplates.map((template) => (
           <TemplateItem key={template.templateId} onClick={() => openModal(template.templateId)}>
             <TemplateImage
-              src={template.thumbnailImg ? template.thumbnailImg : templateImg}
+              src={template.thumbnailImg ? template.thumbnailImg : noImage}
               alt="Template"
             />
             <TemplateInfo>

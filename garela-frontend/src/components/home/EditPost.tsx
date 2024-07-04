@@ -1,11 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import styled from "styled-components";
-import { postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState, PostType } from "../../atom";
-import { useRecoilState } from "recoil";
+import {
+  applyTemplateIdState,
+  postCategoryState,
+  postEditorState,
+  postFileState,
+  postSummaryState,
+  postTitleState,
+  PostType,
+  selectedPostIdState,
+} from "../../atom";
+import { useRecoilState, useRecoilValue } from "recoil";
 
 // Define the Divider Blot
 const BlockEmbed = Quill.import("blots/block/embed");
@@ -29,7 +38,11 @@ Quill.register(DividerBlot, true);
 const CustomToolbar = () => (
   <div id="toolbar">
     <span className="ql-formats">
-      <select className="ql-header" defaultValue="" onChange={(e) => e.persist()}>
+      <select
+        className="ql-header"
+        defaultValue=""
+        onChange={(e) => e.persist()}
+      >
         <option value="1"></option>
         <option value="2"></option>
         <option value=""></option>
@@ -74,21 +87,6 @@ const CustomToolbar = () => (
     </span>
   </div>
 );
-
-// Define the custom toolbar module
-const modules = {
-  toolbar: {
-    container: "#toolbar",
-    handlers: {
-      divider: function (this: any) {
-        const range = this.quill.getSelection();
-        if (range) {
-          this.quill.insertEmbed(range.index, "divider", "70%", "user");
-        }
-      },
-    },
-  },
-};
 
 const formats = [
   "header",
@@ -153,7 +151,12 @@ const PreviewContainer = styled.div`
   overflow-y: auto; /* Enable vertical scroll */
   max-height: 700px; /* Ensure max height matches the parent height */
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin: 0;
   }
 
@@ -165,7 +168,7 @@ const PreviewContainer = styled.div`
   }
 
   blockquote {
-    border-left: 4px solid #5A67D8;
+    border-left: 4px solid #5a67d8;
     margin: 0;
     padding: 10px 20px;
   }
@@ -238,6 +241,33 @@ const TitleInput = styled.input`
   border-radius: 4px;
 `;
 
+const CategorySelect = styled.select`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const SummaryInput = styled.textarea`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+const FileInput = styled.input`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
 const EditPost: React.FC = () => {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
@@ -246,23 +276,107 @@ const EditPost: React.FC = () => {
   const [category, setCategory] = useRecoilState(postCategoryState);
   const [summary, setSummary] = useRecoilState(postSummaryState);
   const [file, setFile] = useRecoilState(postFileState);
+  const quillRef = useRef<ReactQuill | null>(null);
+  const selectedPostId = useRecoilValue<number | undefined>(selectedPostIdState);
+
+
+  const [applyTemplateId, setApplyTemplateId] = useRecoilState<number | undefined>(applyTemplateIdState);
+
+
+  useEffect(() => {
+    if (applyTemplateId === 0) {
+      return ;
+    }
+    const fetchTemplate = async () => {
+      const response = await axios.get(`http://localhost:5000/templates/${applyTemplateId}`, {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      setEditorState(response.data.content);
+    }
+    fetchTemplate();
+    setApplyTemplateId(0);
+  }, [applyTemplateId]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files ? e.target.files[0] : null;
+    setFile(selectedFile);
+  };
+
+  const imageHandler = () => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+
+    input.onchange = async () => {
+      if (input.files) {
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+          const response = await axios.post(
+            "http://localhost:5000/upload/upload-image",
+            formData
+          ); // 올바른 포트로 수정
+          const imageUrl = response.data.url;
+
+          if (quillRef.current) {
+            const quill = quillRef.current.getEditor();
+            const range = quill.getSelection();
+            if (range) {
+              quill.insertEmbed(range.index, "image", imageUrl);
+            }
+          }
+        } catch (error) {
+          console.error("Image upload failed:", error);
+        }
+      }
+    };
+  };
+
+  const modules = useMemo(
+    () => ({
+      toolbar: {
+        container: "#toolbar",
+        handlers: {
+          image: imageHandler,
+          divider: function (this: any) {
+            const range = this.quill.getSelection();
+            if (range) {
+              this.quill.insertEmbed(range.index, "divider", "70%", "user");
+            }
+          },
+        },
+      },
+    }),
+    []
+  );
 
   useEffect(() => {
     const fetchPostDetail = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/posts/${postId}`
+          `http://localhost:5000/posts/${postId}`, {
+            headers : {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            }
+          }
         );
-        const post:PostType = response.data;
+        console.log(response.data);
+        const post: PostType = response.data;
         setTitle(post.title);
         setEditorState(post.content);
+        setCategory(post.category);
       } catch (error) {
         console.error("Failed to fetch post detail", error);
       }
     };
 
     fetchPostDetail();
-  }, [postId]);
+  }, []);
 
   const handleUpdate = async () => {
     try {
@@ -272,7 +386,7 @@ const EditPost: React.FC = () => {
           title,
           content: editorState,
           category: "default",
-          summary: editorState.substring(0, 100) // assuming summary is the first 100 chars of content
+          summary: editorState.substring(0, 100), // assuming summary is the first 100 chars of content
         },
         {
           headers: {
@@ -297,14 +411,29 @@ const EditPost: React.FC = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          <CategorySelect
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Select Category</option>
+            <option value="Study">Study</option>
+            <option value="Hobby">Hobby</option>
+            <option value="Work">Work</option>
+          </CategorySelect>
+          <SummaryInput
+            placeholder="Summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+          />
+          <FileInput type="file" accept="image/*" onChange={handleFileChange} />
           <CustomToolbar />
           <ReactQuill
+            ref={quillRef}
             value={editorState}
             onChange={setEditorState}
             modules={modules}
             formats={formats}
           />
-          <button onClick={handleUpdate}>Update Post</button>
         </EditorContainer>
         <PreviewContainer dangerouslySetInnerHTML={{ __html: editorState }} />
       </EditorWrapper>

@@ -1,9 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import styled from "styled-components";
 import { useRecoilState } from "recoil";
-import { postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState } from "../../atom";
+import { applyTemplateIdState, postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState } from "../../atom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
@@ -278,7 +278,24 @@ const CreatePost: React.FC = () => {
   const [category, setCategory] = useRecoilState(postCategoryState);
   const [summary, setSummary] = useRecoilState(postSummaryState);
   const [file, setFile] = useRecoilState<File | null>(postFileState);
+  const [applyTemplateId, setApplyTemplateId] = useRecoilState<number | undefined>(applyTemplateIdState);
   const quillRef = useRef<ReactQuill | null>(null);
+
+  useEffect(() => {
+    if (applyTemplateId === 0) {
+      return ;
+    }
+    const fetchTemplate = async () => {
+      const response = await axios.get(`http://localhost:5000/templates/${applyTemplateId}`, {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      setEditorState(response.data.content);
+    }
+    fetchTemplate();
+    setApplyTemplateId(0);
+  }, [applyTemplateId])
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files ? e.target.files[0] : null;

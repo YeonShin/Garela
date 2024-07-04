@@ -149,7 +149,20 @@ export const filterState = atom({
   default: "All",
 });
 
+export const selectedPostIdState = atom<number | undefined>({
+  key: "selectedPostIdState",
+  default: 0
+});
 
+export const selectedTemplateIdState = atom<number | undefined>({
+  key: "selectedTemplateIdState",
+  default: 0
+});
+
+export const applyTemplateIdState = atom<number | undefined>({
+  key :"applyTemplateIdState",
+  default: 0
+});
 
 export const modeState = atom({
   key: "modeState",
