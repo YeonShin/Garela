@@ -62,7 +62,6 @@ const Content = styled.div`
   padding: 0 2rem 2rem 0;
   margin-left: 120px;
   margin-top: 120px;
-  margin-bottom: 120px;
 `;
 
 const MyPage: React.FC = () => {

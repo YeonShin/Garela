@@ -9,7 +9,7 @@ const ProfileContainer = styled.div`
   flex-direction: column;
   align-items: center;
   padding: 0 12rem 0 12rem;
-  margin-bottom: 2rem;
+  margin-bottom: 8.6rem;
 `;
 
 const ProfileImage = styled.img`

@@ -385,41 +385,10 @@ const Navbar: React.FC = () => {
     profileImg: null,
     name: "",
     info: "",
-    myTemplates: [{
-      likes: 0,
-      title: "",
-      views: 0,
-      userImg: null,
-      category: "",
-      createdAt: new Date(),
-      templateId: 0,
-      thumbnailImg: null,
-    }],
-    myPosts: [{
-      likes: 0,
-      title: "",
-      views: 0,
-      postId: 0,
-      summary: "",
-      userImg: null,
-      category: "",
-      userName: "",
-      createdAt: new Date(),
-      thumbnailImg: null,
-    }],
-    followingUsers: [{
-      info: "",
-      name: "",
-      userId : 0,
-      profileImg: null,
-    }],
-    templateLibrary: [{
-      title: "",
-      category: "",
-      templateId: 0,
-      isMyTemplate : false,
-      thumbnailImg: null,
-    }]
+    myTemplates: [],
+    myPosts: [],
+    followingUsers: [],
+    templateLibrary: []
   };
 
   const handleLogout = () => {

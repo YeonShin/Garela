@@ -9,8 +9,7 @@ export interface UserInfoType {
   profileImg: string | null;
   name: string;
   info: string;
-  myTemplates: [
-    {
+  myTemplates: {
       likes: number;
       title: string;
       views: number;
@@ -19,10 +18,8 @@ export interface UserInfoType {
       createdAt: Date;
       templateId: number;
       thumbnailImg: string | null;
-    }
-  ];
-  myPosts: [
-    {
+    }[];
+  myPosts: {
       likes: number;
       title: string;
       views: number;
@@ -30,24 +27,24 @@ export interface UserInfoType {
       summary: string;
       userImg: string | null;
       category: string;
+      comments: number;
       userName: string;
       createdAt: Date;
       thumbnailImg: string | null;
-    }
-  ];
-  followingUsers: [{
+    }[];
+  followingUsers: {
     info: string;
     name: string;
     userId : number;
     profileImg: string | null;
-  }];
-  templateLibrary: [{
+  }[];
+  templateLibrary: {
     title: string;
     category: string;
     templateId: number;
     isMyTemplate : boolean;
     thumbnailImg: string | null;
-  }];
+  }[];
 }
 
 export const myInfoState = atom<UserInfoType>({
@@ -58,41 +55,10 @@ export const myInfoState = atom<UserInfoType>({
     profileImg: null,
     name: "",
     info: "",
-    myTemplates: [{
-      likes: 0,
-      title: "",
-      views: 0,
-      userImg: null,
-      category: "",
-      createdAt: new Date(),
-      templateId: 0,
-      thumbnailImg: null,
-    }],
-    myPosts: [{
-      likes: 0,
-      title: "",
-      views: 0,
-      postId: 0,
-      summary: "",
-      userImg: null,
-      category: "",
-      userName: "",
-      createdAt: new Date(),
-      thumbnailImg: null,
-    }],
-    followingUsers: [{
-      info: "",
-      name: "",
-      userId : 0,
-      profileImg: null,
-    }],
-    templateLibrary: [{
-      title: "",
-      category: "",
-      templateId: 0,
-      isMyTemplate : false,
-      thumbnailImg: null,
-    }]
+    myTemplates: [],
+    myPosts: [],
+    followingUsers: [],
+    templateLibrary: []
   },
 effects_UNSTABLE: [persistAtom],
 });
