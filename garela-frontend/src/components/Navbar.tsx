@@ -649,7 +649,7 @@ const Navbar: React.FC = () => {
                 setSummary("");
                 setFile(null);
                 setEditorState("");
-                navigate("/home/board");
+                navigate("/home/template");
               }}
             >
               Cancel

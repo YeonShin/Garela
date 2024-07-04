@@ -68,7 +68,7 @@ const upload = multer({ storage: storage });
  *       500:
  *         description: Internal server error
  */
-router.get('/', (req, res) => {
+router.get('/', authenticateJWT, (req, res) => {
   const userId = req.user ? req.user.userId : null;
 
   const query = `
@@ -94,10 +94,11 @@ router.get('/', (req, res) => {
 
   connection.query(query, [userId], (err, results) => {
     if (err) return res.status(500).send(err);
-    // Convert 1/0 to true/false for 'subscribed'
+    
     results.forEach(template => {
       template.subscribed = template.subscribed === 1;
     });
+    
     res.status(200).json(results);
   });
 });
@@ -157,7 +158,7 @@ router.get('/', (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:templateId', (req, res) => {
+router.get('/:templateId', authenticateJWT, (req, res) => {
   const userId = req.user ? req.user.userId : null;
   const templateId = req.params.templateId;
 
@@ -178,9 +179,9 @@ router.get('/:templateId', (req, res) => {
           t.template_id AS templateId, 
           t.user_id AS userId,
           t.title, 
-          t.content, 
+          t.content,
           u.name AS userName, 
-          u.profile_img AS userImg, 
+          u.profile_img AS userImg,
           t.category, 
           t.created_at AS createdAt, 
           t.views, 
@@ -237,6 +238,7 @@ router.get('/:templateId', (req, res) => {
     });
   });
 });
+
 
 /**
  * @swagger

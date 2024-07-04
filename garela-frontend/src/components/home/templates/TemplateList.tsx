@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import DummyTemplates from "./DummyTemplate";
 import BasicProfileImg from "../../../imgs/basicProfile.png";
@@ -6,8 +6,10 @@ import templateImg from "../../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../../Util";
 import ProfileImg from "../../../imgs/profile.jpg";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { TemplateType, filterState, selectedCategoryState } from "../../../atom";
+import { TemplateListType, TemplateType, filterState, selectedCategoryState } from "../../../atom";
 import TemplateDetail from "./TemplateDetail";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -151,12 +153,30 @@ const ActionIcon = styled.span`
 
 
 const TemplateList: React.FC = () => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [templates, setTemplates] = useState<TemplateListType[]>([]);
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/templates", {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setTemplates(response.data);
+    } catch (error) {
+      console.error("Failed to fetch templates", error);
+    }
+  }
+  useEffect(() => {
 
-  const filteredTemplates = DummyTemplates.filter((template) => {
+    fetchTemplates();
+  }, []);
+
+  const filteredTemplates = templates.filter((template) => {
     if (filter === "All") return true;
     if (filter === "Subscribed") return template.subscribed;
     if (filter === "Trending") {
@@ -177,13 +197,15 @@ const TemplateList: React.FC = () => {
     return template.category === selectedCategory;
   });
 
-  const openModal = (template: TemplateType) => {
-    setSelectedTemplate(template);
+  const openModal = (templateId: number) => {
+    setSelectedTemplate(templateId);
     setIsModalOpen(true);
   };
-
+  
   const closeModal = () => {
+    fetchTemplates();
     setIsModalOpen(false);
+    setSelectedTemplate(null);
   };
 
   return (
@@ -212,7 +234,7 @@ const TemplateList: React.FC = () => {
       <Divider />
       <TemplateContainer>
         {filteredTemplates.map((template) => (
-          <TemplateItem key={template.templateId} onClick={() => openModal(template)}>
+          <TemplateItem key={template.templateId} onClick={() => openModal(template.templateId)}>
             <TemplateImage
               src={template.thumbnailImg ? template.thumbnailImg : templateImg}
               alt="Template"
@@ -247,11 +269,12 @@ const TemplateList: React.FC = () => {
       </TemplateContainer>
 
       {isModalOpen && selectedTemplate && (
-        <TemplateDetail
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-        />
-      )}
+  <TemplateDetail
+    isOpen={isModalOpen}
+    onRequestClose={closeModal}
+    templateId={selectedTemplate}
+  />
+)}
     </BodyContainer>
   );
 };
