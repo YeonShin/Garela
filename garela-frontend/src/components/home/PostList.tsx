@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import ProfileImg from "../../imgs/profile.jpg";
-import DummyPosts, { PostType } from "./DummyPosts";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { filterState, selectedCategoryState } from "../../atom";
+import { filterState, PostListType, selectedCategoryState } from "../../atom";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const PostContainer = styled.div`
   display: flex;
@@ -152,7 +152,24 @@ const PostList: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
-  const [posts, setPosts] = useState<PostType[]>(DummyPosts);
+  const [posts, setPosts] = useState<PostListType[]>([]);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/posts", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setPosts(response.data);
+      } catch (error) {
+        console.error("Failed to fetch posts", error);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const filteredPosts = posts
     .filter((post) => {
@@ -210,7 +227,7 @@ const PostList: React.FC = () => {
               alt="Profile"
             />
             <div>
-              <div>{post.username}</div>
+              <div>{post.userName}</div>
               <div>
                 {post.category} • {formatTimeAgo(new Date(post.createdAt))}
               </div>
@@ -223,7 +240,7 @@ const PostList: React.FC = () => {
             />
             <PostInfo>
               <PostTitle>{post.title}</PostTitle>
-              <PostText>{post.content}</PostText>
+              <PostText>{post.summary}</PostText>
               <PostActions>
                 <Action>
                   <ActionIcon>💬</ActionIcon>
