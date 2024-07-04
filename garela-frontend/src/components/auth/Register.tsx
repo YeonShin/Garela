@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { UserInfoType, userInfoState } from "../../atom";
+import { UserInfoType } from "../../atom";
 import { useNavigate } from "react-router-dom";
 
 const OuterContainer = styled.div`

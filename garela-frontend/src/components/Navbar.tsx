@@ -10,9 +10,9 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import {
   UserInfoType,
   modeState,
+  myInfoState,
   postEditorState,
   postTitleState,
-  userInfoState,
 } from "../atom";
 import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
 
@@ -337,7 +337,7 @@ const Navbar: React.FC = () => {
   const [isPostDropdownOpen, setPostDropdownOpen] = useState(false); // 상태 추가
   const [isTemplateDropdownOpen, setTemplateDropdownOpen] = useState(false); // 템플릿 드롭다운 상태 추가
   const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
-  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(userInfoState);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
   const [mode, setMode] = useRecoilState(modeState);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null); // 선택된 템플릿 상태 추가
   const [editorState, setEditorState] = useRecoilState(postEditorState); // 에디터 상태 추가
@@ -379,9 +379,53 @@ const Navbar: React.FC = () => {
     };
   }, [isDropdownOpen, isPostDropdownOpen]);
 
+  const defaultUserInfo: UserInfoType = {
+    userId: 0,
+    email: "",
+    profileImg: null,
+    name: "",
+    info: "",
+    myTemplates: [{
+      likes: 0,
+      title: "",
+      views: 0,
+      userImg: null,
+      category: "",
+      createdAt: new Date(),
+      templateId: 0,
+      thumbnailImg: null,
+    }],
+    myPosts: [{
+      likes: 0,
+      title: "",
+      views: 0,
+      postId: 0,
+      summary: "",
+      userImg: null,
+      category: "",
+      userName: "",
+      createdAt: new Date(),
+      thumbnailImg: null,
+    }],
+    followingUsers: [{
+      info: "",
+      name: "",
+      userId : 0,
+      profileImg: null,
+    }],
+    templateLibrary: [{
+      title: "",
+      category: "",
+      templateId: 0,
+      isMyTemplate : false,
+      thumbnailImg: null,
+    }]
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    setUserInfo(defaultUserInfo);
     navigate("/");
     setLogoutModalOpen(false);
   };
@@ -468,20 +512,19 @@ const Navbar: React.FC = () => {
                 </PostButton>
                 <ProfileButton onClick={toggleDropdown}>
                   <ProfileImage
-                    src={userInfo.photo ? ProfileImg : BasicProfileImg}
+                    src={userInfo.profileImg ? userInfo.profileImg: BasicProfileImg}
                     alt="Profile"
                   />
                   {isDropdownOpen && (
                     <DropdownMenu ref={dropdownRef}>
                       <DropdownHeader>
                         <HeaderImage
-                          src={userInfo.photo ? ProfileImg : BasicProfileImg}
+                          src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg}
                           alt="Profile"
                         />
                         <HeaderName>{userInfo.name}</HeaderName>
                       </DropdownHeader>
-                      <DropdownItem to="/profile">내 프로필</DropdownItem>
-                      <DropdownItem to="/settings">설정</DropdownItem>
+                      <DropdownItem to="/home/mypage/profile">설정</DropdownItem>
                       <DropdownButton onClick={openLogoutModal}>
                         로그아웃
                       </DropdownButton>
@@ -550,9 +593,12 @@ const Navbar: React.FC = () => {
         onRequestClose={closeLogoutModal}
         style={customStyles}
       >
-        <p>정말 로그아웃 하시겠습니까?</p>
+        <p style={{textAlign:"center"}}>정말 로그아웃 하시겠습니까?</p>
+        <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap: "30px"}}>
         <ConfirmButton onClick={handleLogout}>확인</ConfirmButton>
         <CancelButton onClick={closeLogoutModal}>취소</CancelButton>
+        </div>
+
       </Modal>
     </FixedNavbar>
   );

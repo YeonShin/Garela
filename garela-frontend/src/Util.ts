@@ -1,3 +1,9 @@
+import axios from "axios";
+import { useRecoilState } from "recoil";
+import { myInfoState, UserInfoType } from "./atom";
+
+
+
 export const formatTimeAgo = (date: Date): string => {
   const now = new Date();
   const seoulOffset = 9 * 60; // Seoul is UTC+9
@@ -34,3 +40,4 @@ export const formatTimeAgo = (date: Date): string => {
   }
   return `${Math.floor(seconds)} second${seconds !== 1 ? "s" : ""} ago`;
 };
+
