@@ -1,31 +1,68 @@
 import { atom } from "recoil";
+import { recoilPersist } from 'recoil-persist';
+
+const { persistAtom } = recoilPersist();
 
 export interface UserInfoType {
-  email: string;
-  photo: string | null;
   userId: number;
+  email: string;
+  profileImg: string | null;
   name: string;
   info: string;
-  followingUser: FollowingUserType[];
-  myPost : PostType[];
-  myTemplate: TemplateType[];
+  myTemplates: {
+      likes: number;
+      title: string;
+      views: number;
+      userImg: string | null;
+      category: string;
+      createdAt: Date;
+      templateId: number;
+      thumbnailImg: string | null;
+    }[];
+  myPosts: {
+      likes: number;
+      title: string;
+      views: number;
+      postId: number;
+      summary: string;
+      userImg: string | null;
+      category: string;
+      comments: number;
+      userName: string;
+      createdAt: Date;
+      thumbnailImg: string | null;
+    }[];
+  followingUsers: {
+    info: string;
+    name: string;
+    userId : number;
+    profileImg: string | null;
+  }[];
+  templateLibrary: {
+    title: string;
+    category: string;
+    templateId: number;
+    isMyTemplate : boolean;
+    thumbnailImg: string | null;
+  }[];
 }
 
-export interface MyInfoType {
-  email: string;
-  photo: string | null;
-  userId: number;
-  name: string;
-  info: string;
+export const myInfoState = atom<UserInfoType>({
+  key: "myInfoState",
+  default: {
+    userId: 0,
+    email: "",
+    profileImg: null,
+    name: "",
+    info: "",
+    myTemplates: [],
+    myPosts: [],
+    followingUsers: [],
+    templateLibrary: []
+  },
+effects_UNSTABLE: [persistAtom],
+});
 
-
-}
-
-export interface FollowingUserType {
-  userId: number;
-  name: string;
-  photo: string | null;
-}
 
 export interface PostType {
   postId: number;
@@ -34,14 +71,14 @@ export interface PostType {
   category: string;
   title: string;
   content: string;
-  thumbnailImg : string | null;
-  createdAt : Date;
+  thumbnailImg: string | null;
+  createdAt: Date;
   comments: number;
   likes: number;
   views: number;
   liked: boolean;
   subscribed: boolean;
-};
+}
 
 export interface TemplateType {
   templateId: number;
@@ -50,41 +87,29 @@ export interface TemplateType {
   category: string;
   title: string;
   content: string;
-  thumbnailImg : string | null;
-  createdAt : Date;
+  thumbnailImg: string | null;
+  createdAt: Date;
   likes: number;
   views: number;
   liked: boolean;
   subscribed: boolean;
-};
+}
 
 export const selectedCategoryState = atom({
   key: "selectedCategoryState",
-  default: "All"
+  default: "All",
 });
 
 export const filterState = atom({
   key: "filterState",
-  default: "All"
+  default: "All",
 });
 
-export const userInfoState = atom<UserInfoType>({
-  key: "userInfoState",
-  default: {
-    email: "",
-    photo: null,
-    userId: 0,
-    name: "",
-    info: "",
-    followingUser: [],
-    myPost: [],
-    myTemplate: []
-  }
-});
+
 
 export const modeState = atom({
   key: "modeState",
-  default: "default"
+  default: "default",
 });
 
 export const postEditorState = atom({

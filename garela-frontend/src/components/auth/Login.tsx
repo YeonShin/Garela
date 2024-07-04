@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { useRecoilState } from "recoil";
+import { UserInfoType, myInfoState } from "../../atom";
 
 const OuterContainer = styled.div`
   display: flex;
@@ -124,7 +127,7 @@ interface FormData {
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -137,13 +140,56 @@ const Login: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 제출 로직 추가
-    console.log("Form Data:", formData);
-    localStorage.setItem("token", "test");
-    navigate("/");
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/users/login",
+        {
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        const token = response.data.token;
+        localStorage.setItem("token", token);
+
+        getUserInfo();
+
+        alert("로그인에 성공했습니다.");
+        navigate("/");
+      }
+    } catch (error) {
+      console.error("로그인에 실패했습니다.", error);
+      alert("로그인에 실패했습니다.");
+    }
   };
+
+  const getUserInfo = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const userResponse = await axios.get("http://localhost:5000/users", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (userResponse.status == 200) {
+        setUserInfo(userResponse.data);
+      }
+    } catch (error) {
+      console.error("유저 정보 조회에 실패했습니다.", error);
+    }
+  };
+
+
 
   return (
     <OuterContainer>

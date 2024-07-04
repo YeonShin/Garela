@@ -13,6 +13,13 @@ import PostDetail from "./components/home/PostDetail";
 import CreatePost from "./components/home/CreatePost";
 import CreateTemplate from "./components/home/templates/CreateTemplate";
 import Create from "./screen/Create";
+import Setting from "./components/MyPage";
+import MyPage from "./components/MyPage";
+import Profile from "./components/mypage/Profile";
+import Posts from "./components/mypage/Posts";
+import Templates from "./components/mypage/Templates";
+import Follows from "./components/mypage/Follows";
+import TemplateLibrary from "./components/mypage/TemplateLibrary";
 
 const router = createBrowserRouter([
   {
@@ -60,6 +67,32 @@ const router = createBrowserRouter([
       {
         path: "template",
         element: <TemplateBoard />,
+      },
+      {
+        path: "mypage",
+        element: <MyPage />,
+        children: [
+          {
+            path: "profile",
+            element: <Profile />,
+          },
+          {
+            path: "posts",
+            element: <Posts />,
+          },
+          {
+            path: "templates",
+            element: <Templates />,
+          },
+          {
+            path: "follows",
+            element: <Follows />,
+          },
+          {
+            path: "library",
+            element: <TemplateLibrary />,
+          },
+        ],
       }
     ]
   },
