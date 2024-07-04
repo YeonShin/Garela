@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Modal from "react-modal";
 import PostIcon from "../imgs/postBtn.png";
 import ProfileImg from "../imgs/profile.jpg";
@@ -16,6 +16,7 @@ import {
   postFileState,
   postSummaryState,
   postTitleState,
+  selectedPostIdState,
 } from "../atom";
 import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
 import axios from "axios";
@@ -354,6 +355,7 @@ const Navbar: React.FC = () => {
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
   const location = useLocation();
   const navigate = useNavigate();
+  const selectedPostId = useRecoilValue<number | undefined>(selectedPostIdState);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -432,6 +434,44 @@ const Navbar: React.FC = () => {
       );
       if (response.status === 200) {
         alert("게시글 등록 완료");
+        navigate("/home/board");
+        setMode("default");
+        setTitle("");
+        setCategory("");
+        setSummary("");
+        setFile(null);
+        setEditorState("");
+      }
+    } catch (error) {
+      console.error("Failed to create post", error);
+    }
+  };
+
+  const handleEditPost = async () => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", editorState);
+    formData.append("category", category);
+    formData.append("summary", summary);
+    if (file) {
+      formData.append("image", file);
+    }
+    console.log(editorState);
+
+    try {
+      const response = await axios.put(
+        `http://localhost:5000/posts/${selectedPostId}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (response.status === 200) {
+        alert("게시글 수정 완료");
         navigate("/home/board");
         setMode("default");
         setTitle("");
@@ -611,7 +651,7 @@ const Navbar: React.FC = () => {
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
               {isTemplateDropdownOpen && (
-                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+                <TemplateLibrary  />
               )}
             </TemplateContainer>
             <PostCancleButton
@@ -638,7 +678,7 @@ const Navbar: React.FC = () => {
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
               {isTemplateDropdownOpen && (
-                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+                <TemplateLibrary  />
               )}
             </TemplateContainer>
             <PostCancleButton
@@ -649,7 +689,7 @@ const Navbar: React.FC = () => {
                 setSummary("");
                 setFile(null);
                 setEditorState("");
-                navigate("/home/board");
+                navigate("/home/template");
               }}
             >
               Cancel
@@ -667,7 +707,7 @@ const Navbar: React.FC = () => {
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
               {isTemplateDropdownOpen && (
-                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+                <TemplateLibrary  />
               )}
             </TemplateContainer>
             <PostCancleButton
@@ -678,7 +718,7 @@ const Navbar: React.FC = () => {
             >
               Cancel
             </PostCancleButton>
-            <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
+            <PostCompleteButton onClick={handleEditPost}>Post</PostCompleteButton>
           </NavLinks>
         )}
         {mode === "editTemplate" && (
@@ -689,7 +729,7 @@ const Navbar: React.FC = () => {
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
               {isTemplateDropdownOpen && (
-                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+                <TemplateLibrary />
               )}
             </TemplateContainer>
             <PostCancleButton

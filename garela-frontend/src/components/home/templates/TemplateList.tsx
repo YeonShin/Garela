@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import DummyTemplates from "./DummyTemplate";
 import BasicProfileImg from "../../../imgs/basicProfile.png";
@@ -6,8 +6,11 @@ import templateImg from "../../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../../Util";
 import ProfileImg from "../../../imgs/profile.jpg";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { TemplateType, filterState, selectedCategoryState } from "../../../atom";
+import { TemplateListType, TemplateType, UserInfoType, filterState, myInfoState, selectedCategoryState } from "../../../atom";
 import TemplateDetail from "./TemplateDetail";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import noImage from "../../../imgs/noResult.jpg";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -151,12 +154,32 @@ const ActionIcon = styled.span`
 
 
 const TemplateList: React.FC = () => {
+  const navigate = useNavigate();
   const [filter, setFilter] = useRecoilState(filterState);
   const selectedCategory = useRecoilValue(selectedCategoryState);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+  const [templates, setTemplates] = useState<TemplateListType[]>([]);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
 
-  const filteredTemplates = DummyTemplates.filter((template) => {
+  const fetchTemplates = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/templates", {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setTemplates(response.data);
+    } catch (error) {
+      console.error("Failed to fetch templates", error);
+    }
+  }
+  useEffect(() => {
+
+    fetchTemplates();
+  }, []);
+
+  const filteredTemplates = templates.filter((template) => {
     if (filter === "All") return true;
     if (filter === "Subscribed") return template.subscribed;
     if (filter === "Trending") {
@@ -177,20 +200,22 @@ const TemplateList: React.FC = () => {
     return template.category === selectedCategory;
   });
 
-  const openModal = (template: TemplateType) => {
-    setSelectedTemplate(template);
+  const openModal = (templateId: number) => {
+    setSelectedTemplate(templateId);
     setIsModalOpen(true);
   };
-
+  
   const closeModal = () => {
+    fetchTemplates();
     setIsModalOpen(false);
+    setSelectedTemplate(null);
   };
 
   return (
     <BodyContainer>
       <TemplateCreationForm>
-        <ProfileImage src={ProfileImg} alt="Profile" />
-        <Input type="text" placeholder="Write your post" disabled />
+        <ProfileImage src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg} alt="Profile" />
+        <Input type="text" placeholder="Write your post" onClick={() => navigate("/create/template")} />
       </TemplateCreationForm>
       <TemplateFilters>
         <FilterLink active={filter === "All"} onClick={() => setFilter("All")}>
@@ -211,10 +236,13 @@ const TemplateList: React.FC = () => {
       </TemplateFilters>
       <Divider />
       <TemplateContainer>
+        {filteredTemplates.length === 0 && (
+          <div style={{minHeight: "60vh"}}>작성된 템플릿이 없습니다</div>
+        )}
         {filteredTemplates.map((template) => (
-          <TemplateItem key={template.templateId} onClick={() => openModal(template)}>
+          <TemplateItem key={template.templateId} onClick={() => openModal(template.templateId)}>
             <TemplateImage
-              src={template.thumbnailImg ? template.thumbnailImg : templateImg}
+              src={template.thumbnailImg ? template.thumbnailImg : noImage}
               alt="Template"
             />
             <TemplateInfo>
@@ -247,11 +275,12 @@ const TemplateList: React.FC = () => {
       </TemplateContainer>
 
       {isModalOpen && selectedTemplate && (
-        <TemplateDetail
-          isOpen={isModalOpen}
-          onRequestClose={closeModal}
-        />
-      )}
+  <TemplateDetail
+    isOpen={isModalOpen}
+    onRequestClose={closeModal}
+    templateId={selectedTemplate}
+  />
+)}
     </BodyContainer>
   );
 };

@@ -1,11 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import ProfileImg from "../../imgs/profile.jpg";
-import DummyPosts from "./DummyPosts";
 import { formatTimeAgo } from "../../Util";
+import axios from "axios";
+import { PostListType } from "../../atom";
+import BasicProfileImg from "../../imgs/basicProfile.png";
+import { useNavigate } from "react-router-dom";
 
 const TrendingPosts = styled.div`
   margin-top: 20px;
+  min-height: 40vh;
 `;
 
 const TrendingPostContainer = styled.div`
@@ -13,12 +17,13 @@ const TrendingPostContainer = styled.div`
   background: ${(props) => props.theme.colors.surface};
   padding: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-height: 20vh;
 `;
 
 const TrendingPostItem = styled.div`
   display: grid;
-  grid-template-columns: auto auto 4fr; /* Define three columns */
-  grid-template-rows: auto auto; /* Define two rows */
+  grid-template-columns: auto auto 4fr;
+  grid-template-rows: auto auto;
   align-items: center;
   padding: 10px;
   margin-bottom: 10px;
@@ -31,7 +36,7 @@ const TrendingPostItem = styled.div`
 `;
 
 const RankNumber = styled.div`
-  grid-column: 1; /* Position in the first column */
+  grid-column: 1;
   font-size: 20px;
   font-weight: bold;
   margin-right: 5px;
@@ -39,7 +44,7 @@ const RankNumber = styled.div`
 `;
 
 const ProfileImage = styled.img`
-  grid-column: 2; /* Position in the second column */
+  grid-column: 2;
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -47,7 +52,7 @@ const ProfileImage = styled.img`
 `;
 
 const UserInfo = styled.div`
-  grid-column: 3; /* Position in the second column */
+  grid-column: 3;
   display: flex;
   align-items: center;
 `;
@@ -59,12 +64,12 @@ const Username = styled.div`
 
 const Category = styled.div`
   color: #666;
-  margin-left: 5px; /* Adjust margin for styling */
+  margin-left: 5px;
 `;
 
 const Title = styled.div`
-  grid-column: span 3; /* Position in the third column */
-  grid-row: 2; /* Span across two rows */
+  grid-column: span 3;
+  grid-row: 2;
   font-weight: bold;
   margin-top: 5px;
   margin-left: 15px;
@@ -80,38 +85,50 @@ const TrendingTitle = styled.h2`
   margin-bottom: 10px;
 `;
 
-const ThumbnailImage = styled.img`
-  width: 60px;
-  height: 60px;
-  border-radius: 10px;
-  margin-right: 10px;
-`;
-
 const TrendingPostList: React.FC = () => {
-  // 현재 날짜와 같은 날짜에 작성된 글 필터링
   const today = new Date();
-  const filteredPosts = DummyPosts.filter((post) => {
-    const postDate = new Date(post.createdAt);
-    return (
-      postDate.getFullYear() === today.getFullYear() &&
-      postDate.getMonth() === today.getMonth() &&
-      postDate.getDate() === today.getDate()
-    );
-  });
+  const [posts, setPosts] = useState<PostListType[]>([]);
+  const navigate = useNavigate();
 
-  // 좋아요 수 기준으로 정렬
-  filteredPosts.sort((a, b) => b.likes - a.likes);
+  useEffect(() => {
+    const fetchTopPosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/posts", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const filteredPosts = response.data
+          .filter((post: PostListType) => {
+            const postDate = new Date(post.createdAt);
+            const currentDate = new Date();
+            const timeDiff = Math.abs(currentDate.getTime() - postDate.getTime());
+            const diffDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            return diffDays <= 3;
+          })
+          .sort((a: PostListType, b: PostListType) => b.likes - a.likes)
+          .slice(0, 3);
+
+        setPosts(filteredPosts);
+      } catch (error) {
+        console.error("Failed to fetch top posts", error);
+      }
+    };
+
+    fetchTopPosts();
+  }, []);
 
   return (
     <TrendingPosts>
       <TrendingTitle>🔥 Trending Post</TrendingTitle>
       <TrendingPostContainer>
-        {filteredPosts.map((post, index) => (
-          <TrendingPostItem key={post.postId}>
+        {posts.map((post, index) => (
+          <TrendingPostItem key={post.postId} onClick={() => navigate(`/home/board/${post.postId}`)}>
             <RankNumber>{index + 1}</RankNumber>
-            <ProfileImage src={post.userImg || ProfileImg} alt="Profile" />
+            <ProfileImage src={post.userImg || BasicProfileImg} alt="Profile" />
             <UserInfo>
-              <Username>{post.username}</Username>
+              <Username>{post.userName}</Username>
               <Category>#{post.category}</Category>
             </UserInfo>
             <Title>{post.title}</Title>

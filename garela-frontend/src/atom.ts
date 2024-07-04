@@ -109,19 +109,34 @@ export interface CommentType {
   myComment : number;
 }
 
+export interface TemplateListType {
+  templateId: number;
+  userId: number;
+  title: string;
+  thumbnailImg: string | null;
+  userImg : string | null;
+  category: string;
+  createdAt: Date;
+  views: number;
+  likes : number;
+  subscribed: boolean;
+}
+
 export interface TemplateType {
   templateId: number;
-  username: string;
-  userImg: string | null;
-  category: string;
+  userId: number;
   title: string;
   content: string;
-  thumbnailImg: string | null;
+  userName: string;
+  userImg: string | null;
+  category: string;
   createdAt: Date;
-  likes: number;
   views: number;
+  likes: number;
+  myTemplate : boolean;
   liked: boolean;
-  subscribed: boolean;
+  followed: boolean;
+  added: boolean;
 }
 
 export const selectedCategoryState = atom({
@@ -134,7 +149,20 @@ export const filterState = atom({
   default: "All",
 });
 
+export const selectedPostIdState = atom<number | undefined>({
+  key: "selectedPostIdState",
+  default: 0
+});
 
+export const selectedTemplateIdState = atom<number | undefined>({
+  key: "selectedTemplateIdState",
+  default: 0
+});
+
+export const applyTemplateIdState = atom<number | undefined>({
+  key :"applyTemplateIdState",
+  default: 0
+});
 
 export const modeState = atom({
   key: "modeState",

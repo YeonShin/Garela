@@ -1,10 +1,15 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import ProfileImg from "../../../imgs/profile.jpg";
-import DummyTemplates from "./DummyTemplate";;
+import DummyTemplates from "./DummyTemplate";import { TemplateListType } from "../../../atom";
+import axios from "axios";
+import BasicProfileImg from "../../../imgs/basicProfile.png";
+import { useNavigate } from "react-router-dom";
+;
 
 const TrendingPosts = styled.div`
   margin-top: 20px;
+  min-height: 40vh;
 `;
 
 const TrendingPostContainer = styled.div`
@@ -88,29 +93,49 @@ const ThumbnailImage = styled.img`
 
 const TrendingTemplateList: React.FC = () => {
   // 현재 날짜와 같은 날짜에 작성된 글 필터링
-  const today = new Date();
-  const filteredPosts = DummyTemplates.filter((template) => {
-    const postDate = new Date(template.createdAt);
-    return (
-      postDate.getFullYear() === today.getFullYear() &&
-      postDate.getMonth() === today.getMonth() &&
-      postDate.getDate() === today.getDate()
-    );
-  });
+  const [templates, setTemplates] = useState<TemplateListType[]>([]);
+  const navigate = useNavigate();
 
-  // 좋아요 수 기준으로 정렬
-  filteredPosts.sort((a, b) => b.likes - a.likes);
+  useEffect(() => {
+    const fetchTopPosts = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/templates", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
+        const filteredTemplates = response.data
+          .filter((template: TemplateListType) => {
+            const postDate = new Date(template.createdAt);
+            const currentDate = new Date();
+            const timeDiff = Math.abs(currentDate.getTime() - postDate.getTime());
+            const diffDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+            return diffDays <= 3;
+          })
+          .sort((a: TemplateListType, b: TemplateListType) => b.likes - a.likes)
+          .slice(0, 3);
+
+        setTemplates(filteredTemplates);
+      } catch (error) {
+        console.error("Failed to fetch top posts", error);
+      }
+    };
+
+    fetchTopPosts();
+  }, []);
+
+
 
   return (
     <TrendingPosts>
       <TrendingTitle>🔥 Trending Template</TrendingTitle>
       <TrendingPostContainer>
-        {filteredPosts.map((template, index) => (
+        {templates.map((template:TemplateListType, index: number) => (
           <TrendingPostItem key={template.templateId}>
             <RankNumber>{index + 1}</RankNumber>
-            <ProfileImage src={template.userImg || ProfileImg} alt="Profile" />
+            <ProfileImage src={template.userImg || BasicProfileImg} alt="Profile" />
             <UserInfo>
-              <Username>{template.username}</Username>
               <Category>#{template.category}</Category>
             </UserInfo>
             <Title>{template.title}</Title>

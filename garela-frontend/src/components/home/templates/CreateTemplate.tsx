@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
-import { postEditorState, postTitleState } from "../../../atom";
+import { applyTemplateIdState, postCategoryState, postEditorState, postFileState, postSummaryState, postTitleState } from "../../../atom";
+import axios from "axios";
 
 // Define the Divider Blot
 const BlockEmbed = Quill.import("blots/block/embed");
@@ -73,20 +74,6 @@ const CustomToolbar = () => (
   </div>
 );
 
-// Define the custom toolbar module
-const modules = {
-  toolbar: {
-    container: "#toolbar",
-    handlers: {
-      divider: function (this: any) {
-        const range = this.quill.getSelection();
-        if (range) {
-          this.quill.insertEmbed(range.index, "divider", "70%", "user");
-        }
-      },
-    },
-  },
-};
 
 const formats = [
   "header",
@@ -168,6 +155,11 @@ const PreviewContainer = styled.div`
     padding: 10px 20px;
   }
 
+  iframe {
+    width: 100%;
+    height: 300px;
+  }
+
   a {
     color: #007bff;
     text-decoration: underline;
@@ -236,29 +228,103 @@ const TitleInput = styled.input`
   border-radius: 4px;
 `;
 
-const ButtonContainer = styled.div`
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-`;
-
-const SubmitButton = styled.button`
-  padding: 10px 20px;
-  background-color: ${(props) => props.theme.colors.primary};
-  color: white;
-  border: none;
+const CategorySelect = styled.select`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 18px;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-
-  &:hover {
-    background-color: ${(props) => props.theme.colors.primary}90;
-  }
 `;
+
+const FileInput = styled.input`
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+`;
+
+
 
 const CreateTemplate: React.FC = () => {
   const [editorState, setEditorState] = useRecoilState(postEditorState);
   const [title, setTitle] = useRecoilState(postTitleState);
+  const [category, setCategory] = useRecoilState(postCategoryState);
+  const [summary, setSummary] = useRecoilState(postSummaryState);
+  const [file, setFile] = useRecoilState<File | null>(postFileState);
+  const quillRef = useRef<ReactQuill | null>(null);
+  
+  const [applyTemplateId, setApplyTemplateId] = useRecoilState<number | undefined>(applyTemplateIdState);
+
+
+  useEffect(() => {
+    if (applyTemplateId === 0) {
+      return ;
+    }
+    const fetchTemplate = async () => {
+      const response = await axios.get(`http://localhost:5000/templates/${applyTemplateId}`, {
+        headers : {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        }
+      });
+      setEditorState(response.data.content);
+    }
+    fetchTemplate();
+    setApplyTemplateId(0);
+  }, [applyTemplateId])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files ? e.target.files[0] : null;
+    setFile(selectedFile);
+  };
+
+  const imageHandler = () => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+  
+    input.onchange = async () => {
+      if (input.files) {
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("image", file);
+  
+        try {
+          const response = await axios.post("http://localhost:5000/upload/upload-image", formData); // 올바른 포트로 수정
+          const imageUrl = response.data.url;
+  
+          if (quillRef.current) {
+            const quill = quillRef.current.getEditor();
+            const range = quill.getSelection();
+            if (range) {
+              quill.insertEmbed(range.index, "image", imageUrl);
+            }
+          }
+        } catch (error) {
+          console.error("Image upload failed:", error);
+        }
+      }
+    };
+  };
+
+
+  const modules = useMemo(() => ({
+    toolbar: {
+      container: "#toolbar",
+      handlers: {
+        image: imageHandler,
+        divider: function (this: any) {
+          const range = this.quill.getSelection();
+          if (range) {
+            this.quill.insertEmbed(range.index, "divider", "70%", "user");
+          }
+        },
+      },
+    },
+  }), []);
 
   return (
     <Body>
@@ -270,8 +336,19 @@ const CreateTemplate: React.FC = () => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+          <CategorySelect
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Select Category</option>
+            <option value="Study">Study</option>
+            <option value="Hobby">Hobby</option>
+            <option value="Work">Work</option>
+          </CategorySelect>
+          <FileInput type="file" accept="image/*" onChange={handleFileChange} />
           <CustomToolbar />
           <ReactQuill
+            ref={quillRef}
             value={editorState}
             onChange={setEditorState}
             modules={modules}
