@@ -74,8 +74,8 @@ const upload = multer({ storage: storage });
  *       500:
  *         description: Internal server error
  */
-router.get('/', (req, res) => {
-  const userId = req.user ? req.user.userId : null;
+router.get('/', authenticateJWT, (req, res) => {
+  const userId = req.user.userId;
   
   const query = `
     SELECT 
@@ -103,13 +103,16 @@ router.get('/', (req, res) => {
 
   connection.query(query, [userId], (err, results) => {
     if (err) return res.status(500).send(err);
+    
     // Convert 1/0 to true/false for 'subscribed'
     results.forEach(post => {
       post.subscribed = post.subscribed === 1;
     });
+    
     res.status(200).json(results);
   });
 });
+
 
 /**
  * @swagger
@@ -186,7 +189,7 @@ router.get('/', (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:postId', (req, res) => {
+router.get('/:postId', authenticateJWT, (req, res) => {
   const userId = req.user ? req.user.userId : null;
   const postId = req.params.postId;
 
@@ -228,6 +231,7 @@ router.get('/:postId', (req, res) => {
             WHERE f.follower_id = ? 
               AND f.following_id = p.user_id
           ) AS followed,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comments,
           (SELECT JSON_ARRAYAGG(JSON_OBJECT(
             'commentId', c.comment_id,
             'userImg', u2.profile_img,
@@ -271,6 +275,7 @@ router.get('/:postId', (req, res) => {
     });
   });
 });
+
 
 /**
  * @swagger
