@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { useRecoilState } from "recoil";
 import { myInfoState, UserInfoType } from "../../atom";
@@ -74,6 +74,10 @@ const Profile: React.FC = () => {
     profileImg: userInfo.profileImg || "",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getUserInfo();
+  }, [])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

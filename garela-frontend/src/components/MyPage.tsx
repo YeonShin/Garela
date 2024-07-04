@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { NavLink, Outlet } from "react-router-dom";
+import axios from "axios";
+import { useRecoilState } from "recoil";
+import { myInfoState, UserInfoType } from "../atom";
 
 const Container = styled.div`
   display: flex;
@@ -65,6 +68,8 @@ const Content = styled.div`
 `;
 
 const MyPage: React.FC = () => {
+
+
   return (
     <Container>
       <Sidebar>

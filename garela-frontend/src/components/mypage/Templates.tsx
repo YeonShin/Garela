@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { myInfoState, UserInfoType } from "../../atom";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import templateImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
+import axios from "axios";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -110,7 +111,30 @@ const NoTemplatesMessage = styled.div`
 `;
 
 const Templates: React.FC = () => {
-  const userInfo = useRecoilValue<UserInfoType>(myInfoState);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+
+  const getUserInfo = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const userResponse = await axios.get("http://localhost:5000/users", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (userResponse.status == 200) {
+        setUserInfo(userResponse.data);
+      }
+    } catch (error) {
+      console.error("유저 정보 조회에 실패했습니다.", error);
+    }
+  };
+
+
+  useEffect(() => {
+    getUserInfo();
+  }, []);
 
   if (userInfo.myTemplates === null) {
     return <NoTemplatesMessage>작성한 템플릿이 없습니다</NoTemplatesMessage>;

@@ -1,11 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import { myInfoState, UserInfoType } from "../../atom";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const PostContainer = styled.div`
   display: flex;
@@ -56,6 +57,7 @@ const PostImage = styled.img`
   width: 100px;
   height: 100px;
   border-radius: 10px;
+  margin-left: 20px;
   margin-right: 40px;
 `;
 
@@ -111,7 +113,31 @@ const NoPostsMessage = styled.div`
 
 const Posts: React.FC = () => {
   const navigate = useNavigate();
-  const userInfo = useRecoilValue<UserInfoType>(myInfoState);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+
+
+  const getUserInfo = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const userResponse = await axios.get("http://localhost:5000/users", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (userResponse.status == 200) {
+        setUserInfo(userResponse.data);
+      }
+    } catch (error) {
+      console.error("유저 정보 조회에 실패했습니다.", error);
+    }
+  };
+
+
+  useEffect(() => {
+    getUserInfo();
+  }, []);
 
   if (userInfo.myPosts === null) {
     return <NoPostsMessage>작성한 게시글이 없습니다</NoPostsMessage>;
