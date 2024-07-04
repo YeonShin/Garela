@@ -1,12 +1,19 @@
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
-import DummyPostDetail, { CommentType } from "./DummyPostDetail";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { formatTimeAgo } from "../../Util";
 import BasicProfileImg from "../../imgs/basicProfile.png";
-import ProfileImg from "../../imgs/profile.jpg";
-import PostImg from "../../imgs/postImg.jpg";
-import { useRef, useState } from "react";
 import MoreButtonImg from "../../imgs/moreButton.png";
-import { useNavigate } from "react-router-dom";
+import ProfileImg from "../../imgs/profile.jpg";
+import {
+  CommentType,
+  modeState,
+  myInfoState,
+  PostType,
+  UserInfoType,
+} from "../../atom";
+import { useRecoilState } from "recoil";
 
 const Container = styled.div`
   display: flex;
@@ -60,80 +67,16 @@ const ContentImage = styled.img`
 
 const Content = styled.div`
   margin-bottom: 20px;
-
-    h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-  }
-
-  pre {
-    background: #f5f2f0;
-    padding: 10px;
-    border-radius: 4px;
-    overflow: auto;
-  }
-
-  blockquote {
-    border-left: 4px solid #5A67D8;
-    margin: 0;
-    padding: 10px 20px;
-  }
-
-  a {
-    color: #007bff;
-    text-decoration: underline;
-  }
-
-  .ql-align-center {
-    text-align: center;
-  }
-
-  .ql-align-right {
-    text-align: right;
-  }
-
-  .ql-align-justify {
-    text-align: justify;
-  }
-
-  .ql-indent-1 {
-    padding-left: 3em;
-  }
-
-  .ql-indent-2 {
-    padding-left: 6em;
-  }
-
-  .ql-indent-3 {
-    padding-left: 9em;
-  }
-
-  .ql-indent-4 {
-    padding-left: 12em;
-  }
-
-  .ql-video {
+  img {
     width: 100%;
-    height: 400px;
+    max-height: 100%; // 원하는 최대 높이로 조절
+    object-fit: cover;
+    margin-bottom: 20px;
+    border-radius: 10px;
   }
-
-  .ql-font-serif {
-    font-family: "Georgia", "Times New Roman", serif;
-  }
-
-  .ql-font-monospace {
-    font-family: "Monaco", "Courier New", monospace;
-  }
-
-  .ql-size-small {
-    font-size: 0.75em;
-  }
-
-  .ql-size-large {
-    font-size: 1.5em;
-  }
-
-  .ql-size-huge {
-    font-size: 2.5em;
+  iframe {
+    width: 100%;
+    height: 300px;
   }
 `;
 
@@ -148,17 +91,20 @@ const AuthorInfo = styled.div`
 const FollowButton = styled.button<{ isFollowed: boolean }>`
   margin-left: 20px;
   padding: 10px 20px;
-  background-color: ${(props) => (props.isFollowed ? "white" : props.theme.colors.primary)};
-  color: ${(props) => (props.isFollowed ? props.theme.colors.primary : "white")};
-  border: ${(props) => (props.isFollowed ? `1px solid ${props.theme.colors.primary}` : "none")};
+  background-color: ${(props) =>
+    props.isFollowed ? "white" : props.theme.colors.primary};
+  color: ${(props) =>
+    props.isFollowed ? props.theme.colors.primary : "white"};
+  border: ${(props) =>
+    props.isFollowed ? `1px solid ${props.theme.colors.primary}` : "none"};
   border-radius: 5px;
   cursor: pointer;
 
   &:hover {
-    background-color: ${(props) => (props.isFollowed ? "#f0f0f0" : `${props.theme.colors.primary}90`)};
+    background-color: ${(props) =>
+      props.isFollowed ? "#f0f0f0" : `${props.theme.colors.primary}90`};
   }
 `;
-
 
 const Actions = styled.div`
   display: flex;
@@ -166,7 +112,6 @@ const Actions = styled.div`
   justify-content: space-between;
   margin-bottom: 20px;
 `;
-
 
 const Action = styled.div<{ liked?: boolean }>`
   display: flex;
@@ -184,7 +129,6 @@ const Action = styled.div<{ liked?: boolean }>`
     color: white;
   }
 `;
-
 
 const ActionIcon = styled.span`
   margin-right: 5px;
@@ -210,7 +154,6 @@ const SendButton = styled.div`
   color: ${(props) => props.theme.colors.primary};
   cursor: pointer;
 `;
-
 
 const CommentList = styled.div`
   margin: 10px 0;
@@ -263,70 +206,184 @@ const DropdownItem = styled.div`
 `;
 
 const PostDetail: React.FC = () => {
+  const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  const post = DummyPostDetail;
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedComment, setSelectedComment] = useState<number | null>(null);
-  const commentInputRef = useRef<HTMLInputElement>(null);
+  const [post, setPost] = useState<PostType | null>(null);
   const [isFollowed, setIsFollowed] = useState(false);
-  const [likes, setLikes] = useState(post.likes);
-  const [isLiked, setIsLiked] = useState(post.liked);
-  const [comments, setComments] = useState(post.comment);
+  const [isLiked, setIsLiked] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [comments, setComments] = useState<CommentType[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showCommentDropdown, setShowCommentDropdown] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<number | null>(null);
+  const [selectedComment, setSelectedComment] = useState<number | null>(null);
+  const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+  const [mode, setMode] = useRecoilState(modeState);
 
-  const handleCommentClick = () => {
-    commentInputRef.current?.focus();
+  useEffect(() => {
+    getUserInfo();
+  }, []);
+
+  useEffect(() => {
+    const fetchPostDetail = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/posts/${postId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setPost(response.data);
+        setComments(response.data.commentList);
+        setIsFollowed(response.data.followed);
+        setIsLiked(response.data.liked);
+      } catch (error) {
+        console.error("Failed to fetch post detail", error);
+      }
+    };
+
+    fetchPostDetail();
+  }, [postId]);
+
+  const getUserInfo = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const userResponse = await axios.get("http://localhost:5000/users", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (userResponse.status == 200) {
+        setUserInfo(userResponse.data);
+      }
+    } catch (error) {
+      console.error("유저 정보 조회에 실패했습니다.", error);
+    }
   };
 
-  const toggleDropdown = (commentId: number | null) => {
-    setSelectedComment(commentId);
+  const toggleDropdown = (postId: number | null) => {
+    setSelectedPost(postId);
     setShowDropdown((prev) => !prev);
   };
 
-  const handleFollow = () => {
-    setIsFollowed(!isFollowed);
+  const toggleCommentDropdown = (commentId: number | null) => {
+    setSelectedComment(commentId);
+    setShowCommentDropdown((prev) => !prev);
   };
 
-  const handleLike = () => {
-    if (isLiked) {
-      setLikes(likes - 1);
-    } else {
-      setLikes(likes + 1);
+  const handleFollow = async () => {
+    if (!post) return;
+    try {
+      await axios.put(
+        `http://localhost:5000/users/follow/${post.userId}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setIsFollowed((prev) => !prev);
+    } catch (error) {
+      console.error("Failed to toggle follow status", error);
     }
-    setIsLiked(!isLiked);
   };
-  
-  const handleEditPost = () => {  
-    // 추가
-  }
 
-  const handleDeletePost = () => {
-    navigate("/home/board");
-  }
-
-
-  const handleDeleteComment = () => {
-    // 추가
-  }
+  const handleLike = async () => {
+    if (!post) return;
+    try {
+      await axios.put(`http://localhost:5000/posts/like/${post.postId}`, null, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setIsLiked((prev) => !prev);
+      setPost((prev) =>
+        prev ? { ...prev, likes: prev.likes + (isLiked ? -1 : 1) } : prev
+      );
+    } catch (error) {
+      console.error("Failed to toggle like status", error);
+    }
+  };
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewComment(e.target.value);
   };
 
-  const handleCommentSubmit = () => {
-    const newCommentData = {
-      commentId: comments.length + 1, // 새로운 댓글 ID
-      userId: Math.random(), // 임시 userId
-      userName: "CurrentUser",
-      userImg: ProfileImg,
-      createdAt: new Date(),
-      content: newComment,
-      myComment: true,
-    };
-
-    setComments([...comments, newCommentData]);
-    setNewComment("");
+  const handleCommentSubmit = async () => {
+    if (!newComment) return;
+    try {
+      await axios.post(
+        `http://localhost:5000/posts/comment/${postId}`,
+        {
+          content: newComment,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      setNewComment("");
+      const response = await axios.get(
+        `http://localhost:5000/posts/${postId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setComments(response.data.commentList);
+    } catch (error) {
+      console.error("Failed to submit comment", error);
+    }
   };
+
+  const handleEditPost = () => {
+    navigate(`/edit/post/${postId}`);
+    setMode("editPost");
+  };
+
+  const handleDeletePost = async () => {
+    try {
+      await axios.delete(`http://localhost:5000/posts/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      navigate("/home/board");
+    } catch (error) {
+      console.error("Failed to delete post", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await axios.delete(`http://localhost:5000/posts/comment/${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const response = await axios.get(
+        `http://localhost:5000/posts/${postId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setComments(response.data.commentList);
+    } catch (error) {
+      console.error("Failed to delete comment", error);
+    }
+  };
+
+  if (!post) return <div>Loading...</div>;
 
   return (
     <Container>
@@ -342,24 +399,23 @@ const PostDetail: React.FC = () => {
           </PostMeta>
         </HeaderInfo>
         {post.myPost && (
-                <DropdownContainer>
-                  <MoreButton
-                    src={MoreButtonImg}
-                    onClick={() => toggleDropdown(post.userId)}
-                  />
-                  {showDropdown && selectedComment === post.userId && (
-                    <DropdownMenu>
-                      <DropdownItem onClick={handleEditPost}>수정</DropdownItem>
-                      <DropdownItem onClick={handleDeletePost}>삭제</DropdownItem>
-                    </DropdownMenu>
-                  )}
-                </DropdownContainer>
-              )}
+          <DropdownContainer>
+            <MoreButton
+              src={MoreButtonImg}
+              onClick={() => toggleDropdown(post.userId)}
+            />
+            {showDropdown && selectedPost === post.userId && (
+              <DropdownMenu>
+                <DropdownItem onClick={handleEditPost}>수정</DropdownItem>
+                <DropdownItem onClick={handleDeletePost}>삭제</DropdownItem>
+              </DropdownMenu>
+            )}
+          </DropdownContainer>
+        )}
       </Header>
       <Divider />
       <Title>{post.title}</Title>
       <Divider />
-      {post.postImg && <ContentImage src={post.postImg} alt="Post" />}
       <Content dangerouslySetInnerHTML={{ __html: post.content }} />
       <AuthorInfo>
         <ProfileImage
@@ -370,17 +426,19 @@ const PostDetail: React.FC = () => {
           <UserName>{post.userName}</UserName>
           <div>{post.userInfo}</div>
         </div>
-        <FollowButton isFollowed={isFollowed} onClick={handleFollow}>
-          {isFollowed ? "Unfollow" : "Follow"}
-        </FollowButton>
+        {userInfo.userId !== post.userId && (
+          <FollowButton isFollowed={isFollowed} onClick={handleFollow}>
+            {isFollowed ? "Unfollow" : "Follow"}
+          </FollowButton>
+        )}
       </AuthorInfo>
       <Divider />
       <Actions>
-        <Action onClick={handleCommentClick}>
+        <Action onClick={() => {}}>
           <ActionIcon>💬</ActionIcon> {post.comments}
         </Action>
         <Action liked={isLiked} onClick={handleLike}>
-          <ActionIcon>👍</ActionIcon> {likes}
+          <ActionIcon>👍</ActionIcon> {post.likes}
         </Action>
         <Action>
           <ActionIcon>👁️</ActionIcon> {post.views}
@@ -390,9 +448,11 @@ const PostDetail: React.FC = () => {
         </Action>
       </Actions>
       <CommentInput>
-        <ProfileImage src={ProfileImg} alt="Profile" />
+        <ProfileImage
+          src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg}
+          alt="Profile"
+        />
         <Input
-          ref={commentInputRef}
           type="text"
           placeholder="Write your comment"
           value={newComment}
@@ -406,35 +466,45 @@ const PostDetail: React.FC = () => {
         <SendButton onClick={handleCommentSubmit}>➤</SendButton>
       </CommentInput>
       <CommentList>
-        {comments.map((comment) => (
-          <>
-            <CommentItem key={comment.commentId}>
-              <ProfileImage
-                src={comment.userImg ? comment.userImg : BasicProfileImg}
-                alt="Profile"
-              />
-              <CommentContent>
-                <UserName>{comment.userName}</UserName>
-                <PostMeta>{formatTimeAgo(new Date(comment.createdAt))}</PostMeta>
-                <div>{comment.content}</div>
-              </CommentContent>
-              {comment.myComment && (
-                <DropdownContainer>
-                  <MoreButton
-                    src={MoreButtonImg}
-                    onClick={() => toggleDropdown(comment.commentId)}
-                  />
-                  {showDropdown && selectedComment === comment.commentId && (
-                    <DropdownMenu>
-                      <DropdownItem onClick={handleDeleteComment}>삭제</DropdownItem>
-                    </DropdownMenu>
-                  )}
-                </DropdownContainer>
-              )}
-            </CommentItem>
-            <Divider />
-          </>
-        ))}
+        {comments !== null &&
+          comments.map((comment) => (
+            <div key={comment.commentId}>
+              <CommentItem>
+                <ProfileImage
+                  src={comment.userImg ? comment.userImg : BasicProfileImg}
+                  alt="Profile"
+                />
+                <CommentContent>
+                  <UserName>{comment.userName}</UserName>
+                  <PostMeta>
+                    {formatTimeAgo(new Date(comment.createdAt))}
+                  </PostMeta>
+                  <div>{comment.content}</div>
+                </CommentContent>
+                {comment.myComment === 1 && (
+                  <DropdownContainer>
+                    <MoreButton
+                      src={MoreButtonImg}
+                      onClick={() => toggleCommentDropdown(comment.commentId)}
+                    />
+                    {showCommentDropdown &&
+                      selectedComment === comment.commentId && (
+                        <DropdownMenu>
+                          <DropdownItem
+                            onClick={() =>
+                              handleDeleteComment(comment.commentId)
+                            }
+                          >
+                            삭제
+                          </DropdownItem>
+                        </DropdownMenu>
+                      )}
+                  </DropdownContainer>
+                )}
+              </CommentItem>
+              <Divider />
+            </div>
+          ))}
       </CommentList>
     </Container>
   );

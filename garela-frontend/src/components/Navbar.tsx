@@ -11,10 +11,14 @@ import {
   UserInfoType,
   modeState,
   myInfoState,
+  postCategoryState,
   postEditorState,
+  postFileState,
+  postSummaryState,
   postTitleState,
 } from "../atom";
 import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
+import axios from "axios";
 
 Modal.setAppElement("#root");
 
@@ -298,7 +302,7 @@ const PostCancleButton = styled.button`
 
 const TemplateBtnContainer = styled.div`
   display: flex;
-    flex-direction: column;
+  flex-direction: column;
   align-items: center;
   cursor: pointer;
   position: relative;
@@ -307,9 +311,8 @@ const TemplateBtnContainer = styled.div`
   border-radius: 5px;
 
   &:hover {
-    background-color: #ECECEC;
+    background-color: #ececec;
     background-opacity: 50%;
-    
   }
 `;
 
@@ -340,8 +343,13 @@ const Navbar: React.FC = () => {
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
   const [mode, setMode] = useRecoilState(modeState);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null); // 선택된 템플릿 상태 추가
-  const [editorState, setEditorState] = useRecoilState(postEditorState); // 에디터 상태 추가
-  const postTitle = useRecoilValue(postTitleState);
+
+  const [editorState, setEditorState] = useRecoilState(postEditorState);
+  const [title, setTitle] = useRecoilState(postTitleState);
+  const [category, setCategory] = useRecoilState(postCategoryState);
+  const [summary, setSummary] = useRecoilState(postSummaryState);
+  const [file, setFile] = useRecoilState<File | null>(postFileState);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
   const location = useLocation();
@@ -388,7 +396,7 @@ const Navbar: React.FC = () => {
     myTemplates: [],
     myPosts: [],
     followingUsers: [],
-    templateLibrary: []
+    templateLibrary: [],
   };
 
   const handleLogout = () => {
@@ -399,19 +407,84 @@ const Navbar: React.FC = () => {
     setLogoutModalOpen(false);
   };
 
-  const handlePost = () => {
-    console.log("Title:", postTitle);
-    console.log("Content:", editorState);
+  const handlePost = async () => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", editorState);
+    formData.append("category", category);
+    formData.append("summary", summary);
+    if (file) {
+      formData.append("image", file);
+    }
+    console.log(editorState);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/posts",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (response.status === 200) {
+        alert("게시글 등록 완료");
+        navigate("/home/board");
+        setMode("default");
+        setTitle("");
+        setCategory("");
+        setSummary("");
+        setFile(null);
+        setEditorState("");
+      }
+    } catch (error) {
+      console.error("Failed to create post", error);
+    }
   };
 
-  const handleTemplatePost = () => {
-    console.log("Title:", postTitle);
-    console.log("Content:", editorState);
+  const handleTemplatePost = async () => {
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", editorState);
+    formData.append("category", category);
+    if (file) {
+      formData.append("image", file);
+    }
+    console.log(editorState);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/templates",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      if (response.status === 200) {
+        alert("템플릿 등록 완료");
+        navigate("/home/template");
+        setMode("default");
+        setTitle("");
+        setCategory("");
+        setFile(null);
+        setEditorState("");
+      }
+    } catch (error) {
+      console.error("Failed to create post", error);
+    }
   };
 
   const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
   const togglePostDropdown = () => setPostDropdownOpen(!isPostDropdownOpen); // 토글 함수 추가
-  const toggleTemplateDropdown = () => setTemplateDropdownOpen(!isTemplateDropdownOpen); // 템플릿 드롭다운 토글 함수 추가
+  const toggleTemplateDropdown = () =>
+    setTemplateDropdownOpen(!isTemplateDropdownOpen); // 템플릿 드롭다운 토글 함수 추가
   const openLogoutModal = () => setLogoutModalOpen(true);
   const closeLogoutModal = () => setLogoutModalOpen(false);
 
@@ -426,7 +499,18 @@ const Navbar: React.FC = () => {
   return (
     <FixedNavbar>
       <Nav>
-        <Link to="/" onClick={() => setMode("default")}>
+        <Link
+          to="/"
+          onClick={() => {
+            setMode("default");
+            setMode("default");
+            setTitle("");
+            setCategory("");
+            setSummary("");
+            setFile(null);
+            setEditorState("");
+          }}
+        >
           <Logo>
             <MountainIcon
               xmlns="http://www.w3.org/2000/svg"
@@ -481,19 +565,29 @@ const Navbar: React.FC = () => {
                 </PostButton>
                 <ProfileButton onClick={toggleDropdown}>
                   <ProfileImage
-                    src={userInfo.profileImg ? userInfo.profileImg: BasicProfileImg}
+                    src={
+                      userInfo.profileImg
+                        ? userInfo.profileImg
+                        : BasicProfileImg
+                    }
                     alt="Profile"
                   />
                   {isDropdownOpen && (
                     <DropdownMenu ref={dropdownRef}>
                       <DropdownHeader>
                         <HeaderImage
-                          src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg}
+                          src={
+                            userInfo.profileImg
+                              ? userInfo.profileImg
+                              : BasicProfileImg
+                          }
                           alt="Profile"
                         />
                         <HeaderName>{userInfo.name}</HeaderName>
                       </DropdownHeader>
-                      <DropdownItem to="/home/mypage/profile">설정</DropdownItem>
+                      <DropdownItem to="/home/mypage/profile">
+                        설정
+                      </DropdownItem>
                       <DropdownButton onClick={openLogoutModal}>
                         로그아웃
                       </DropdownButton>
@@ -519,7 +613,62 @@ const Navbar: React.FC = () => {
               {isTemplateDropdownOpen && (
                 <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
               )}
-
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                setTitle("");
+                setCategory("");
+                setSummary("");
+                setFile(null);
+                setEditorState("");
+                navigate("/home/board");
+              }}
+            >
+              Cancel
+            </PostCancleButton>
+            <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
+          </NavLinks>
+        )}
+        {mode === "createTemplate" && (
+          <NavLinks>
+            <TemplateContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
+            </TemplateContainer>
+            <PostCancleButton
+              onClick={() => {
+                setMode("default");
+                setTitle("");
+                setCategory("");
+                setSummary("");
+                setFile(null);
+                setEditorState("");
+                navigate("/home/board");
+              }}
+            >
+              Cancel
+            </PostCancleButton>
+            <PostCompleteButton onClick={handleTemplatePost}>
+              Post
+            </PostCompleteButton>
+          </NavLinks>
+        )}
+        {mode === "editPost" && (
+          <NavLinks>
+            <TemplateContainer>
+              <TemplateBtnContainer onClick={toggleTemplateDropdown}>
+                <TemplateButton src={TemplateImg} alt="Template Icon" />
+                <TemplateText>Template</TemplateText>
+              </TemplateBtnContainer>
+              {isTemplateDropdownOpen && (
+                <TemplateLibrary onSelectTemplate={setSelectedTemplate} />
+              )}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
@@ -532,7 +681,7 @@ const Navbar: React.FC = () => {
             <PostCompleteButton onClick={handlePost}>Post</PostCompleteButton>
           </NavLinks>
         )}
-        {mode === "createTemplate" && (
+        {mode === "editTemplate" && (
           <NavLinks>
             <TemplateContainer>
               <TemplateBtnContainer onClick={toggleTemplateDropdown}>
@@ -562,12 +711,18 @@ const Navbar: React.FC = () => {
         onRequestClose={closeLogoutModal}
         style={customStyles}
       >
-        <p style={{textAlign:"center"}}>정말 로그아웃 하시겠습니까?</p>
-        <div style={{display:"flex", alignItems:"center", justifyContent:"center", gap: "30px"}}>
-        <ConfirmButton onClick={handleLogout}>확인</ConfirmButton>
-        <CancelButton onClick={closeLogoutModal}>취소</CancelButton>
+        <p style={{ textAlign: "center" }}>정말 로그아웃 하시겠습니까?</p>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "30px",
+          }}
+        >
+          <ConfirmButton onClick={handleLogout}>확인</ConfirmButton>
+          <CancelButton onClick={closeLogoutModal}>취소</CancelButton>
         </div>
-
       </Modal>
     </FixedNavbar>
   );

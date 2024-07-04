@@ -6,6 +6,8 @@ const multer = require('multer');
 const { S3Client } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const path = require('path');
+const fs = require('fs');
+
 
 // AWS S3 설정
 const s3 = new S3Client({
@@ -19,6 +21,54 @@ const s3 = new S3Client({
 // Multer 설정
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// // AWS S3 설정
+// const s3 = new S3Client({
+//   region: process.env.AWS_REGION,
+//   credentials: {
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//   },
+// });
+
+// // Multer 설정
+// const storage = multer.diskStorage({
+//   destination(req, file, cb) {
+//     cb(null, 'public/uploads');
+//   },
+//   filename(req, file, cb) {
+//     const ext = path.extname(file.originalname);
+//     cb(null, path.basename(file.originalname, ext) + Date.now() + ext);
+//   },
+// });
+
+// const upload = multer({ storage: storage });
+
+// router.post('/upload-image', upload.single('image'), async (req, res) => {
+//   const file = req.file;
+//   if (!file) return res.status(400).send('No file uploaded.');
+
+//   try {
+//     const uploadParams = {
+//       Bucket: process.env.S3_BUCKET_NAME,
+//       Key: `images/${Date.now().toString()}${path.extname(file.originalname)}`,
+//       Body: fs.createReadStream(file.path),
+//     };
+
+//     const upload = new Upload({
+//       client: s3,
+//       params: uploadParams,
+//     });
+
+//     const result = await upload.done();
+//     fs.unlinkSync(file.path); // 로컬 저장소에서 파일 삭제
+//     const imageUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${uploadParams.Key}`;
+
+//     res.status(200).json({ url: imageUrl });
+//   } catch (err) {
+//     res.status(500).send(err);
+//   }
+// });
 
 /**
  * @swagger
@@ -74,14 +124,14 @@ const upload = multer({ storage: storage });
  *       500:
  *         description: Internal server error
  */
-router.get('/', (req, res) => {
+router.get('/', authenticateJWT, (req, res) => {
   const userId = req.user ? req.user.userId : null;
-  
+
   const query = `
     SELECT 
       p.post_id AS postId, 
       p.title, 
-      p.content AS summary, 
+      p.summary AS summary, 
       p.thumbnail_img AS thumbnailImg, 
       p.user_id AS userId,
       u.name AS userName, 
@@ -103,10 +153,12 @@ router.get('/', (req, res) => {
 
   connection.query(query, [userId], (err, results) => {
     if (err) return res.status(500).send(err);
+    
     // Convert 1/0 to true/false for 'subscribed'
     results.forEach(post => {
       post.subscribed = post.subscribed === 1;
     });
+    
     res.status(200).json(results);
   });
 });
@@ -186,7 +238,7 @@ router.get('/', (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:postId', (req, res) => {
+router.get('/:postId', authenticateJWT, (req, res) => {
   const userId = req.user ? req.user.userId : null;
   const postId = req.params.postId;
 
@@ -228,6 +280,7 @@ router.get('/:postId', (req, res) => {
             WHERE f.follower_id = ? 
               AND f.following_id = p.user_id
           ) AS followed,
+          (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.post_id) AS comments,
           (SELECT JSON_ARRAYAGG(JSON_OBJECT(
             'commentId', c.comment_id,
             'userImg', u2.profile_img,
@@ -237,7 +290,7 @@ router.get('/:postId', (req, res) => {
             'myComment', IF(c.user_id = ?, true, false)
           )) FROM comments c 
           JOIN users u2 ON c.user_id = u2.user_id 
-          WHERE c.post_id = p.post_id) AS commentList
+          WHERE c.post_id = p.post_id ORDER BY c.created_at ASC) AS commentList
         FROM posts p
         JOIN users u ON p.user_id = u.user_id
         WHERE p.post_id = ?`;
@@ -254,7 +307,11 @@ router.get('/:postId', (req, res) => {
           post.myPost = post.myPost === 1;
           post.liked = post.liked === 1;
           post.followed = post.followed === 1;
-          post.commentList = JSON.parse(post.commentList);
+
+          // commentList가 null인 경우 빈 배열로 설정
+          if (!post.commentList) {
+            post.commentList = [];
+          }
 
           res.status(200).json(post);
         } else {
@@ -271,6 +328,12 @@ router.get('/:postId', (req, res) => {
     });
   });
 });
+
+
+
+
+
+
 
 /**
  * @swagger
@@ -579,5 +642,113 @@ router.put('/like/:postId', authenticateJWT, (req, res) => {
     }
   });
 });
+
+/**
+ * @swagger
+ * /posts/comment/{postId}:
+ *   post:
+ *     summary: 댓글 작성
+ *     description: 게시글에 댓글을 작성합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - content
+ *             properties:
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 댓글 작성 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       400:
+ *         description: 잘못된 요청
+ *       500:
+ *         description: 서버 오류
+ */
+router.post('/comment/:postId', authenticateJWT, (req, res) => {
+  const { postId } = req.params;
+  const { content } = req.body;
+  const userId = req.user.userId;
+
+  if (!postId || !content) {
+    return res.status(400).send('Missing required fields');
+  }
+
+  const query = 'INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)';
+  connection.query(query, [postId, userId, content], (err, result) => {
+    if (err) return res.status(500).send(err);
+    res.status(200).json({ result: 'OK' });
+  });
+});
+
+/**
+ * @swagger
+ * /posts/comment/{commentId}:
+ *   delete:
+ *     summary: 댓글 삭제
+ *     description: 특정 댓글을 삭제합니다.
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: 댓글 삭제 완료
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 result:
+ *                   type: string
+ *       403:
+ *         description: 권한 없음
+ *       500:
+ *         description: 서버 오류
+ */
+router.delete('/comment/:commentId', authenticateJWT, (req, res) => {
+  const { commentId } = req.params;
+  const userId = req.user.userId;
+
+  // Check if the user is the owner of the comment
+  const checkOwnershipQuery = 'SELECT user_id FROM comments WHERE comment_id = ?';
+  connection.query(checkOwnershipQuery, [commentId], (err, results) => {
+    if (err) return res.status(500).send(err);
+    if (results.length === 0) return res.status(404).send('Comment not found');
+    if (results[0].user_id !== userId) return res.status(403).send('Unauthorized');
+
+    // Delete the comment
+    const deleteQuery = 'DELETE FROM comments WHERE comment_id = ?';
+    connection.query(deleteQuery, [commentId], (err) => {
+      if (err) return res.status(500).send(err);
+      res.status(200).json({ result: 'OK' });
+    });
+  });
+});
+
 
 module.exports = router;
