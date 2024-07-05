@@ -22,6 +22,7 @@ const List = styled.ul`
 const ListItem = styled.li`
   display: flex;
   align-items: center;
+  margin-bottom: 10px;
   justify-content: space-between;
   padding: 1rem 2rem;
   border-bottom: 1px solid #ddd;

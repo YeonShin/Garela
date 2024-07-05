@@ -45,7 +45,7 @@ const CategoryList:React.FC = () => {
         <CategoryItem
           key={category}
           selected={selectedCategory === category}
-          onClick={() => {setSelectedCategory(category); navigate("/home/board")}}
+          onClick={() => {setSelectedCategory(category);}}
         >
           {category === "All" && "📚 "}
           {category === "Study" && "📖 "}

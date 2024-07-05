@@ -15,6 +15,7 @@ import {
   UserInfoType,
 } from "../../atom";
 import { useRecoilState } from "recoil";
+import { useLocation } from "react-router-dom";
 
 const Container = styled.div`
   display: flex;
@@ -223,6 +224,8 @@ const PostDetail: React.FC = () => {
   const [mode, setMode] = useRecoilState(modeState);
   const [selectedPostId, setSelectedPostId] = useRecoilState<number | undefined>(selectedPostIdState);
 
+
+  const location = useLocation();
   useEffect(() => {
     getUserInfo();
   }, []);
@@ -293,6 +296,15 @@ const PostDetail: React.FC = () => {
       setIsFollowed((prev) => !prev);
     } catch (error) {
       console.error("Failed to toggle follow status", error);
+    }
+  };
+
+  const handleCopyClipBoard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("클립보드에 링크가 복사되었어요.");
+    } catch (err) {
+      console.log(err);
     }
   };
 
@@ -447,7 +459,7 @@ const PostDetail: React.FC = () => {
         <Action>
           <ActionIcon>👁️</ActionIcon> {post.views}
         </Action>
-        <Action>
+        <Action onClick={() => handleCopyClipBoard(`http://localhost:3000/home/board/${post.postId}`)}>
           <ActionIcon>🔗</ActionIcon> Share
         </Action>
       </Actions>

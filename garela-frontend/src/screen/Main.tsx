@@ -3,6 +3,8 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import IntroImg from "../imgs/introImage.webp";
 import FeatureImg from "../imgs/main.jpg";  // 새로 업로드된 이미지 파일 import
+import { useNavigate } from "react-router-dom";
+import logo from "../imgs/garela.png";
 
 const MainContainer = styled.div`
   display: flex;
@@ -53,6 +55,7 @@ const IntroSection = styled.div`
 const IntroText = styled.div`
   flex: 1;
   padding: 1rem;
+  text-align: center;
 `;
 
 const IntroImage = styled.img`
@@ -64,7 +67,7 @@ const IntroImage = styled.img`
 `;
 
 const Title = styled.h1`
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: bold;
   margin-bottom: 1rem;
 `;
@@ -118,7 +121,7 @@ const FeatureDescription = styled.p`
 
 const FeatureImage = styled.img`
   flex: 1;
-  max-width: 550px;
+  max-width: 480px;
   width: 100%;
   height: auto;
   border-radius: 1rem;
@@ -167,6 +170,9 @@ const Button = styled.a`
 `;
 
 const Main: React.FC = () => {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+
   return (
     <>
       <Navbar />
@@ -174,11 +180,9 @@ const Main: React.FC = () => {
         <Section>
           <IntroSection>
             <IntroText>
-              <Title>Discover the Power of Our Platform</Title>
+              <Title>Garela와 함께 나만의 스토리를 작성하세요!</Title>
               <Subtitle>
-                Our cutting-edge platform empowers you to build, deploy, and
-                scale web applications with ease. Experience the future of web
-                development.
+              간편한 템플릿으로 누구나 쉽고 빠르게 고퀄리티의 <br /> 게시글을 작성할 수 있는 플랫폼
               </Subtitle>
             </IntroText>
             <IntroImage src={IntroImg} alt="Hero" />
@@ -186,50 +190,41 @@ const Main: React.FC = () => {
         </Section>
         <Section>
           <Content>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Unlock Your Potential</h2>
-            <Subtitle>
-              Our platform offers a comprehensive suite of tools and features to
-              streamline your web development workflow. Discover how we can help
-              you achieve your goals.
-            </Subtitle>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">여러분의 글쓰기 잠재력을 발휘하세요</h2>
             <FeaturesSection>
               <FeaturesList>
                 <FeatureItem>
-                  <FeatureTitle>Rapid Deployment</FeatureTitle>
+                  <FeatureTitle>손쉬운 작성</FeatureTitle>
                   <FeatureDescription>
-                    Deploy your applications with a single click and scale
-                    effortlessly.
+                   템플릿을 통해 누구나 손쉽게 글을 작성할 수 있습니다.
                   </FeatureDescription>
                 </FeatureItem>
                 <FeatureItem>
-                  <FeatureTitle>Seamless Collaboration</FeatureTitle>
+                  <FeatureTitle>공유와 협업</FeatureTitle>
                   <FeatureDescription>
-                    Empower your team with built-in tools for seamless
-                    collaboration.
+                    당신의 템플릿을 다른 사용자와 공유하고 협업하세요.
                   </FeatureDescription>
                 </FeatureItem>
                 <FeatureItem>
-                  <FeatureTitle>Powerful Analytics</FeatureTitle>
+                  <FeatureTitle>고품질 콘텐츠</FeatureTitle>
                   <FeatureDescription>
-                    Gain deep insights into your application's performance and
-                    user behavior.
+                  최고의 퀄리티를 유지하면서도 간편하게 글을 작성하세요.
                   </FeatureDescription>
                 </FeatureItem>
               </FeaturesList>
-              <FeatureImage src={FeatureImg} alt="Features" />
+              <FeatureImage src={logo} alt="Features" />
             </FeaturesSection>
           </Content>
         </Section>
         <Section>
           <Content>
-            <Title>Elevate Your Web Presence</Title>
+            <Title>당신의 이야기, 우리의 플랫폼</Title>
             <Subtitle>
-              Our platform provides the tools and infrastructure you need to
-              build, deploy, and scale your web applications with confidence.
+            템플릿을 활용하여 글쓰기의 즐거움을 느끼고, 당신만의 독창적인 콘텐츠를 만들어보세요.
             </Subtitle>
             <CallToAction>
-              <Button href="#">Learn More</Button>
-              <Button href="#">Contact Sales</Button>
+              <Button onClick={() => navigate("/home/board")}>더 알아보기</Button>
+              <Button onClick={() => (token === null || token === "" ? navigate("/auth/login") : navigate("create/board"))}>지금 시작하기</Button>
             </CallToAction>
           </Content>
         </Section>

@@ -4,6 +4,7 @@ import { useRecoilState } from "recoil";
 import styled from "styled-components";
 import { UserInfoType } from "../../atom";
 import { useNavigate } from "react-router-dom";
+import logo from "../../imgs/garela.png";
 
 const OuterContainer = styled.div`
   display: flex;
@@ -34,12 +35,12 @@ const Box = styled.div`
 
 const LeftSide = styled.div`
   flex: 1;
-  background: #f1f1f1;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
 `;
 
 const RightSide = styled.div`
@@ -127,6 +128,11 @@ const ErrorMessage = styled.div`
   color: red;
   font-size: 0.9rem;
 `;
+
+const LogoImg = styled.img`
+  width: 150px;
+  margin-bottom: 20px;
+`
 
 interface FormData {
   email: string;
@@ -241,9 +247,9 @@ const Register: React.FC = () => {
       </ProgressBar>
       <InnerContainer>
         <Box>
-          <LeftSide>
+          <LeftSide onClick={() => navigate("../..")}>
+            <LogoImg src={logo}/>
             <Title>Garela</Title>
-            <Subtitle>Best Community</Subtitle>
           </LeftSide>
           <RightSide>
             {step === 1 && (

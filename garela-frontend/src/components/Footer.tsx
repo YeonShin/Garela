@@ -40,7 +40,7 @@ const FooterLink = styled(Link)`
 const Footer: React.FC = () => {
   return (
     <FooterContainer>
-      <FooterText>&copy; 2024 Acme Inc. All rights reserved.</FooterText>
+      <FooterText>&copy; 2024 Garela. All rights reserved.</FooterText>
       <FooterNav>
         <FooterLink to="#">Terms of Service</FooterLink>
         <FooterLink to="#">Privacy</FooterLink>

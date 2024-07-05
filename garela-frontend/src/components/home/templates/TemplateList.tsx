@@ -15,6 +15,7 @@ import noImage from "../../../imgs/noResult.jpg";
 const BodyContainer = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 74vh;
 `;
 
 const TemplateContainer = styled.div`

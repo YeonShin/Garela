@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Modal from "react-modal";
 import PostIcon from "../imgs/postBtn.png";
+import logo from "../imgs/garela.png";
 import ProfileImg from "../imgs/profile.jpg";
 import TemplateImg from "../imgs/templateImg.png";
 import BasicProfileImg from "../imgs/basicProfile.png";
@@ -334,6 +335,11 @@ const TemplateText = styled.span`
   color: ${(props) => props.theme.colors.text};
 `;
 
+const LogoImg = styled.img`
+  width: 40px;
+  margin-right: 10px;
+`
+
 const Navbar: React.FC = () => {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -552,16 +558,10 @@ const Navbar: React.FC = () => {
           }}
         >
           <Logo>
-            <MountainIcon
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+            <LogoImg
+              src={logo}
             >
-              <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
-            </MountainIcon>
+            </LogoImg>
             Garela
           </Logo>
         </Link>

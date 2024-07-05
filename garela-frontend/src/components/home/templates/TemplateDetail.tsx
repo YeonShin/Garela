@@ -454,10 +454,6 @@ const TemplateDetail: React.FC<TemplateDetailProps> = ({
             <ActionIcon>👁️</ActionIcon>
             {template.views}
           </ModalAction>
-          <ModalAction>
-            <ActionIcon>🔗</ActionIcon>
-            Share
-          </ModalAction>
           {!template.myTemplate && (
             <AddTemplateButton
               isAdd={isAdded}

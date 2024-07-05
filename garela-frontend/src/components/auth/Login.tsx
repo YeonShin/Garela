@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useRecoilState } from "recoil";
 import { UserInfoType, myInfoState } from "../../atom";
+import logo from "../../imgs/garela.png";
 
 const OuterContainer = styled.div`
   display: flex;
@@ -34,12 +35,12 @@ const Box = styled.div`
 
 const LeftSide = styled.div`
   flex: 1;
-  background: #f1f1f1;
   padding: 2rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
 `;
 
 const RightSide = styled.div`
@@ -120,6 +121,11 @@ const ProgressStep = styled.div`
   border-radius: 5px;
 `;
 
+const LogoImg = styled.img`
+  width: 150px;
+  margin-bottom: 20px;
+`
+
 interface FormData {
   email: string;
   password: string;
@@ -198,9 +204,9 @@ const Login: React.FC = () => {
       </ProgressBar>
       <InnerContainer>
         <Box>
-          <LeftSide>
+          <LeftSide onClick={() => navigate("../..") }>
+            <LogoImg src={logo} />
             <Title>Garela</Title>
-            <Subtitle>Best Community</Subtitle>
           </LeftSide>
           <RightSide>
             <Form onSubmit={handleSubmit}>
