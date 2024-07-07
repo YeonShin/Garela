@@ -2,9 +2,11 @@ import styled from "styled-components";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import IntroImg from "../imgs/introImage.webp";
-import FeatureImg from "../imgs/main.jpg";  // 새로 업로드된 이미지 파일 import
+import FeatureImg from "../imgs/main.jpg"; // 새로 업로드된 이미지 파일 import
 import { useNavigate } from "react-router-dom";
 import logo from "../imgs/garela.png";
+import axios from "axios";
+import { useEffect } from "react";
 
 const MainContainer = styled.div`
   display: flex;
@@ -173,6 +175,24 @@ const Main: React.FC = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const response = await axios.get("http://localhost:5000/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        navigate("/");
+      }
+    };
+    if (token !== null) {
+      getUserInfo();
+    }
+  }, []);
+
   return (
     <>
       <Navbar />
@@ -182,7 +202,8 @@ const Main: React.FC = () => {
             <IntroText>
               <Title>Garela와 함께 나만의 스토리를 작성하세요!</Title>
               <Subtitle>
-              간편한 템플릿으로 누구나 쉽고 빠르게 고퀄리티의 <br /> 게시글을 작성할 수 있는 플랫폼
+                간편한 템플릿으로 누구나 쉽고 빠르게 고퀄리티의 <br /> 게시글을
+                작성할 수 있는 플랫폼
               </Subtitle>
             </IntroText>
             <IntroImage src={IntroImg} alt="Hero" />
@@ -190,13 +211,15 @@ const Main: React.FC = () => {
         </Section>
         <Section>
           <Content>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">여러분의 글쓰기 잠재력을 발휘하세요</h2>
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+              여러분의 글쓰기 잠재력을 발휘하세요
+            </h2>
             <FeaturesSection>
               <FeaturesList>
                 <FeatureItem>
                   <FeatureTitle>손쉬운 작성</FeatureTitle>
                   <FeatureDescription>
-                   템플릿을 통해 누구나 손쉽게 글을 작성할 수 있습니다.
+                    템플릿을 통해 누구나 손쉽게 글을 작성할 수 있습니다.
                   </FeatureDescription>
                 </FeatureItem>
                 <FeatureItem>
@@ -208,7 +231,7 @@ const Main: React.FC = () => {
                 <FeatureItem>
                   <FeatureTitle>고품질 콘텐츠</FeatureTitle>
                   <FeatureDescription>
-                  최고의 퀄리티를 유지하면서도 간편하게 글을 작성하세요.
+                    최고의 퀄리티를 유지하면서도 간편하게 글을 작성하세요.
                   </FeatureDescription>
                 </FeatureItem>
               </FeaturesList>
@@ -220,11 +243,22 @@ const Main: React.FC = () => {
           <Content>
             <Title>당신의 이야기, 우리의 플랫폼</Title>
             <Subtitle>
-            템플릿을 활용하여 글쓰기의 즐거움을 느끼고, 당신만의 독창적인 콘텐츠를 만들어보세요.
+              템플릿을 활용하여 글쓰기의 즐거움을 느끼고, 당신만의 독창적인
+              콘텐츠를 만들어보세요.
             </Subtitle>
             <CallToAction>
-              <Button onClick={() => navigate("/home/board")}>더 알아보기</Button>
-              <Button onClick={() => (token === null || token === "" ? navigate("/auth/login") : navigate("create/board"))}>지금 시작하기</Button>
+              <Button onClick={() => navigate("/home/board")}>
+                더 알아보기
+              </Button>
+              <Button
+                onClick={() =>
+                  token === null || token === ""
+                    ? navigate("/auth/login")
+                    : navigate("create/board")
+                }
+              >
+                지금 시작하기
+              </Button>
             </CallToAction>
           </Content>
         </Section>
