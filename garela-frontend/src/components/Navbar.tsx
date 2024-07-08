@@ -29,7 +29,7 @@ const FixedNavbar = styled.div`
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000;
+  z-index: 998;
 `;
 
 const Nav = styled.nav`
@@ -43,6 +43,7 @@ const Nav = styled.nav`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   border-bottom: 1px solid #e5e5e5;
   height: 80px;
+  z-index: 998;
 `;
 
 const Logo = styled.div`
@@ -262,9 +263,11 @@ const customStyles = {
     borderRadius: "10px",
     border: "none",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    zIndex: 1000,
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+    zIndex: 999
   },
 };
 
