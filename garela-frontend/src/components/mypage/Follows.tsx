@@ -4,6 +4,7 @@ import { useRecoilState, useRecoilValue } from "recoil";
 import axios from "axios";
 import { myInfoState, UserInfoType } from "../../atom";
 import BasicProfileImg from "../../imgs/basicProfile.png";
+import NoResult from "../../imgs/noResult.png";
 
 const Container = styled.div`
   display: flex;
@@ -75,10 +76,17 @@ const FollowButton = styled.button<{ isFollowing: boolean }>`
 `;
 
 const NoUsersMessage = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   margin-top: 2rem;
   color: #666;
 `;
+
+const NoResultImage = styled.img`
+  width: 200px;
+`
 
 const Follows: React.FC = () => {
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
@@ -132,7 +140,7 @@ const Follows: React.FC = () => {
   };
 
   if (!userInfo.followingUsers || userInfo.followingUsers.length === 0) {
-    return <NoUsersMessage>팔로우 중인 유저가 없습니다</NoUsersMessage>;
+    return <NoUsersMessage><NoResultImage src={NoResult} /> 팔로우 중인 유저가 없습니다</NoUsersMessage>;
   }
 
   return (

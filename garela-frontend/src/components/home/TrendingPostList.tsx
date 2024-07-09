@@ -6,6 +6,7 @@ import axios from "axios";
 import { PostListType } from "../../atom";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import { useNavigate } from "react-router-dom";
+import NoResultImg from "../../imgs/noResult.png";
 
 const TrendingPosts = styled.div`
   margin-top: 20px;
@@ -85,6 +86,17 @@ const TrendingTitle = styled.h2`
   margin-bottom: 10px;
 `;
 
+const NoResultContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-contents: center;
+`
+
+const NoResultImage = styled.img`
+  width: 150px;
+`
+
 const TrendingPostList: React.FC = () => {
   const today = new Date();
   const [posts, setPosts] = useState<PostListType[]>([]);
@@ -123,7 +135,13 @@ const TrendingPostList: React.FC = () => {
     <TrendingPosts>
       <TrendingTitle>🔥 Trending Post</TrendingTitle>
       <TrendingPostContainer>
-        {posts.map((post, index) => (
+        {posts.length === 0 && (
+          <NoResultContainer>
+            <NoResultImage src={NoResultImg}/>
+            최근 3일 인기 게시글이 없습니다
+          </NoResultContainer>
+        )}
+        {posts.length > 0 && posts.map((post, index) => (
           <TrendingPostItem key={post.postId} onClick={() => navigate(`/home/board/${post.postId}`)}>
             <RankNumber>{index + 1}</RankNumber>
             <ProfileImage src={post.userImg || BasicProfileImg} alt="Profile" />

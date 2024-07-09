@@ -267,7 +267,7 @@ const customStyles = {
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    zIndex: 999
+    zIndex: 999,
   },
 };
 
@@ -341,7 +341,7 @@ const TemplateText = styled.span`
 const LogoImg = styled.img`
   width: 40px;
   margin-right: 10px;
-`
+`;
 
 const Navbar: React.FC = () => {
   const [isLoginModalOpen, setLoginModalOpen] = useState(false);
@@ -364,7 +364,9 @@ const Navbar: React.FC = () => {
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedPostId = useRecoilValue<number | undefined>(selectedPostIdState);
+  const selectedPostId = useRecoilValue<number | undefined>(
+    selectedPostIdState
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -416,6 +418,7 @@ const Navbar: React.FC = () => {
     setUserInfo(defaultUserInfo);
     navigate("/");
     setLogoutModalOpen(false);
+    document.body.style.overflow = "unset";
   };
 
   const handlePost = async () => {
@@ -534,8 +537,14 @@ const Navbar: React.FC = () => {
   const togglePostDropdown = () => setPostDropdownOpen(!isPostDropdownOpen); // 토글 함수 추가
   const toggleTemplateDropdown = () =>
     setTemplateDropdownOpen(!isTemplateDropdownOpen); // 템플릿 드롭다운 토글 함수 추가
-  const openLogoutModal = () => setLogoutModalOpen(true);
-  const closeLogoutModal = () => setLogoutModalOpen(false);
+  const openLogoutModal = () => {
+    setLogoutModalOpen(true);
+    document.body.style.overflow = "hidden";
+  };
+  const closeLogoutModal = () => {
+    setLogoutModalOpen(false);
+    document.body.style.overflow = "unset";
+  };
 
   const handleApplyTemplate = () => {
     if (selectedTemplate) {
@@ -561,10 +570,7 @@ const Navbar: React.FC = () => {
           }}
         >
           <Logo>
-            <LogoImg
-              src={logo}
-            >
-            </LogoImg>
+            <LogoImg src={logo}></LogoImg>
             Garela
           </Logo>
         </Link>
@@ -653,19 +659,21 @@ const Navbar: React.FC = () => {
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
-              {isTemplateDropdownOpen && (
-                <TemplateLibrary  />
-              )}
+              {isTemplateDropdownOpen && <TemplateLibrary />}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
-                setMode("default");
-                setTitle("");
-                setCategory("");
-                setSummary("");
-                setFile(null);
-                setEditorState("");
-                navigate("/home/board");
+                if (window.confirm("작성중인 내용이 저장되지 않고 삭제됩니다. 계속하시겠습니까?")) {
+                  setMode("default");
+                  setTitle("");
+                  setCategory("");
+                  setSummary("");
+                  setFile(null);
+                  setEditorState("");
+                  navigate("/home/board");
+                } else {
+
+                }
               }}
             >
               Cancel
@@ -680,19 +688,21 @@ const Navbar: React.FC = () => {
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
-              {isTemplateDropdownOpen && (
-                <TemplateLibrary  />
-              )}
+              {isTemplateDropdownOpen && <TemplateLibrary />}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
-                setMode("default");
-                setTitle("");
-                setCategory("");
-                setSummary("");
-                setFile(null);
-                setEditorState("");
-                navigate("/home/template");
+                if (window.confirm("작성중인 내용이 저장되지 않고 삭제됩니다. 계속 하시겠습니까?")) {
+                  setMode("default");
+                  setTitle("");
+                  setCategory("");
+                  setSummary("");
+                  setFile(null);
+                  setEditorState("");
+                  navigate("/home/template");
+                } else {
+
+                };
               }}
             >
               Cancel
@@ -709,19 +719,28 @@ const Navbar: React.FC = () => {
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
-              {isTemplateDropdownOpen && (
-                <TemplateLibrary  />
-              )}
+              {isTemplateDropdownOpen && <TemplateLibrary />}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
-                setMode("default");
-                navigate("/home/board");
+                if (window.confirm("작성중인 내용이 저장되지 않고 삭제됩니다. 계속하시겠습니까?")) {
+                  setMode("default");
+                  setTitle("");
+                  setCategory("");
+                  setSummary("");
+                  setFile(null);
+                  setEditorState("");
+                  navigate("/home/board");
+                } else {
+                  
+                }
               }}
             >
               Cancel
             </PostCancleButton>
-            <PostCompleteButton onClick={handleEditPost}>Post</PostCompleteButton>
+            <PostCompleteButton onClick={handleEditPost}>
+              Post
+            </PostCompleteButton>
           </NavLinks>
         )}
         {mode === "editTemplate" && (
@@ -731,14 +750,23 @@ const Navbar: React.FC = () => {
                 <TemplateButton src={TemplateImg} alt="Template Icon" />
                 <TemplateText>Template</TemplateText>
               </TemplateBtnContainer>
-              {isTemplateDropdownOpen && (
-                <TemplateLibrary />
-              )}
+              {isTemplateDropdownOpen && <TemplateLibrary />}
             </TemplateContainer>
             <PostCancleButton
               onClick={() => {
-                setMode("default");
-                navigate("/home/template");
+                if (window.confirm("작성중인 내용이 저장되지 않고 삭제됩니다. 계속 하시겠습니까?")) {
+                  setMode("default");
+                  setTitle("");
+                  setCategory("");
+                  setSummary("");
+                  setFile(null);
+                  setEditorState("");
+                  navigate("/home/template");
+                } else {
+
+                };
+
+
               }}
             >
               Cancel

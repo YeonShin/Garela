@@ -5,7 +5,7 @@ import DummyTemplates from "./DummyTemplate";import { TemplateListType } from ".
 import axios from "axios";
 import BasicProfileImg from "../../../imgs/basicProfile.png";
 import { useNavigate } from "react-router-dom";
-;
+import NoResultImg from "../../../imgs/noResult.png";
 
 const TrendingPosts = styled.div`
   margin-top: 20px;
@@ -91,6 +91,17 @@ const ThumbnailImage = styled.img`
   margin-right: 10px;
 `;
 
+const NoResultContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-contents: center;
+`
+
+const NoResultImage = styled.img`
+  width: 150px;
+`
+
 const TrendingTemplateList: React.FC = () => {
   // 현재 날짜와 같은 날짜에 작성된 글 필터링
   const [templates, setTemplates] = useState<TemplateListType[]>([]);
@@ -131,6 +142,12 @@ const TrendingTemplateList: React.FC = () => {
     <TrendingPosts>
       <TrendingTitle>🔥 Trending Template</TrendingTitle>
       <TrendingPostContainer>
+        {templates.length === 0 && (
+          <NoResultContainer>
+            <NoResultImage src={NoResultImg} />
+            최근 3일 인기 템플릿이 없습니다
+          </NoResultContainer>
+        )}
         {templates.map((template:TemplateListType, index: number) => (
           <TrendingPostItem key={template.templateId}>
             <RankNumber>{index + 1}</RankNumber>

@@ -22,6 +22,8 @@ import Follows from "./components/mypage/Follows";
 import TemplateLibrary from "./components/mypage/TemplateLibrary";
 import EditPost from "./components/home/EditPost";
 import Edit from "./screen/Edit";
+import path from "path";
+import TemplateDetail from "./components/home/templates/TemplateDetail";
 
 const router = createBrowserRouter([
   {

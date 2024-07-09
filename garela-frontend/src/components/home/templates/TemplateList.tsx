@@ -6,11 +6,18 @@ import templateImg from "../../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../../Util";
 import ProfileImg from "../../../imgs/profile.jpg";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { TemplateListType, TemplateType, UserInfoType, filterState, myInfoState, selectedCategoryState } from "../../../atom";
+import {
+  TemplateListType,
+  TemplateType,
+  UserInfoType,
+  filterState,
+  myInfoState,
+  selectedCategoryState,
+} from "../../../atom";
 import TemplateDetail from "./TemplateDetail";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import noImage from "../../../imgs/noResult.jpg";
+import noImage from "../../../imgs/noResult.png";
 
 const BodyContainer = styled.div`
   display: flex;
@@ -153,6 +160,15 @@ const ActionIcon = styled.span`
   margin-right: 5px;
 `;
 
+const NoResultContainer = styled.div`
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+const NoResultImage = styled.img`
+  width: 200px;
+`;
 
 const TemplateList: React.FC = () => {
   const navigate = useNavigate();
@@ -166,7 +182,7 @@ const TemplateList: React.FC = () => {
   const fetchTemplates = async () => {
     try {
       const response = await axios.get("http://localhost:5000/templates", {
-        headers : {
+        headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
@@ -174,49 +190,60 @@ const TemplateList: React.FC = () => {
     } catch (error) {
       console.error("Failed to fetch templates", error);
     }
-  }
+  };
   useEffect(() => {
-
     fetchTemplates();
   }, []);
 
-  const filteredTemplates = templates.filter((template) => {
-    if (filter === "All") return true;
-    if (filter === "Subscribed") return template.subscribed;
-    if (filter === "Trending") {
-      const today = new Date();
-      const templateDate = new Date(template.createdAt);
-      const diffTime = Math.abs(today.getTime() - templateDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 7;
-    }
-    return false;
-  }).sort((a, b) => {
-    if (filter === "Trending") {
-      return b.likes - a.likes;
-    }
-    return 0;
-  }).filter((template) => {
-    if (selectedCategory === "All") return true;
-    return template.category === selectedCategory;
-  });
+  const filteredTemplates = templates
+    .filter((template) => {
+      if (filter === "All") return true;
+      if (filter === "Subscribed") return template.subscribed;
+      if (filter === "Trending") {
+        const today = new Date();
+        const templateDate = new Date(template.createdAt);
+        const diffTime = Math.abs(today.getTime() - templateDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 7;
+      }
+      return false;
+    })
+    .sort((a, b) => {
+      if (filter === "Trending") {
+        return b.likes - a.likes;
+      }
+      return 0;
+    })
+    .filter((template) => {
+      if (selectedCategory === "All") return true;
+      return template.category === selectedCategory;
+    });
 
   const openModal = (templateId: number) => {
     setSelectedTemplate(templateId);
     setIsModalOpen(true);
+    document.body.style.overflow = "hidden";
   };
-  
+
   const closeModal = () => {
     fetchTemplates();
     setIsModalOpen(false);
     setSelectedTemplate(null);
+    document.body.style.overflow = "unset";
   };
 
   return (
     <BodyContainer>
       <TemplateCreationForm>
-        <ProfileImage src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg} alt="Profile" />
-        <Input type="text" placeholder="Write your post" onClick={() => navigate("/create/template")} />
+        <ProfileImage
+          src={userInfo.profileImg ? userInfo.profileImg : BasicProfileImg}
+          alt="Profile"
+        />
+        <Input
+          type="text"
+          placeholder="Write your post"
+          onClick={() => navigate("/create/template")}
+        />
       </TemplateCreationForm>
       <TemplateFilters>
         <FilterLink active={filter === "All"} onClick={() => setFilter("All")}>
@@ -238,10 +265,16 @@ const TemplateList: React.FC = () => {
       <Divider />
       <TemplateContainer>
         {filteredTemplates.length === 0 && (
-          <div style={{minHeight: "60vh"}}>작성된 템플릿이 없습니다</div>
+          <NoResultContainer>
+            <NoResultImage src={noImage} />
+            작성된 템플릿이 없습니다
+          </NoResultContainer>
         )}
         {filteredTemplates.map((template) => (
-          <TemplateItem key={template.templateId} onClick={() => openModal(template.templateId)}>
+          <TemplateItem
+            key={template.templateId}
+            onClick={() => openModal(template.templateId)}
+          >
             <TemplateImage
               src={template.thumbnailImg ? template.thumbnailImg : noImage}
               alt="Template"
@@ -275,13 +308,15 @@ const TemplateList: React.FC = () => {
         ))}
       </TemplateContainer>
 
+
+
       {isModalOpen && selectedTemplate && (
-  <TemplateDetail
-    isOpen={isModalOpen}
-    onRequestClose={closeModal}
-    templateId={selectedTemplate}
-  />
-)}
+        <TemplateDetail
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          templateId={selectedTemplate}
+        />
+      )}
     </BodyContainer>
   );
 };

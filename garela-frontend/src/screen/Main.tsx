@@ -151,23 +151,11 @@ const Button = styled.a`
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background-color 0.3s;
+  background-color: ${(props) => props.theme.colors.primary};
 
-  &:first-child {
-    background-color: ${(props) => props.theme.colors.primary};
-    color: ${(props) => props.theme.colors.primaryForeground};
-    &:hover {
-      background-color: ${(props) => props.theme.colors.primary}90;
-    }
-  }
-
-  &:last-child {
-    border: 1px solid ${(props) => props.theme.colors.input};
-    background-color: ${(props) => props.theme.colors.background};
-    color: ${(props) => props.theme.colors.text};
-    &:hover {
-      background-color: ${(props) => props.theme.colors.accent};
-      color: ${(props) => props.theme.colors.primaryForeground};
-    }
+  color: ${(props) => props.theme.colors.primaryForeground};
+  &:hover {
+    background-color: ${(props) => props.theme.colors.primary}90;
   }
 `;
 
@@ -175,23 +163,26 @@ const Main: React.FC = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    const getUserInfo = async () => {
-      const response = await axios.get("http://localhost:5000/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  // useEffect(() => {
+  //   const getUserInfo = async () => {
+  //     try {
+  //       const response = await axios.get("http://localhost:5000/users", {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       });
+  
+  //       if (response.status === 403) {
+  //         localStorage.removeItem("token");
+  //         navigate("/");
+  //       }
+  //     }
 
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        navigate("/");
-      }
-    };
-    if (token !== null) {
-      getUserInfo();
-    }
-  }, []);
+  //   };
+  //   if (token !== null) {
+  //     getUserInfo();
+  //   }
+  // }, []);
 
   return (
     <>
@@ -248,15 +239,6 @@ const Main: React.FC = () => {
             </Subtitle>
             <CallToAction>
               <Button onClick={() => navigate("/home/board")}>
-                더 알아보기
-              </Button>
-              <Button
-                onClick={() =>
-                  token === null || token === ""
-                    ? navigate("/auth/login")
-                    : navigate("create/board")
-                }
-              >
                 지금 시작하기
               </Button>
             </CallToAction>
