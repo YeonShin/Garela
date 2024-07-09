@@ -9,7 +9,7 @@ const CategoryContainer = styled.div`
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 20px;
   border-radius: 30px;
-  max-height: 500px;
+  max-height: 550px;
 `;
 
 const CategoryTitle = styled.p`
@@ -35,7 +35,7 @@ const CategoryItem = styled.div<CategoryItemProps>`
 
 const CategoryList:React.FC = () => {
   const navigate = useNavigate();
-  const categories = ["All", "Study", "Cooking"];
+  const categories = ["All", "Study", "Cooking", "Travel", "Fitness", "Movies", "Sports", "Music", "Gaming", "Beauty", "Fashion"];
   const [selectedCategory, setSelectedCategory] = useRecoilState(selectedCategoryState);
   
   return (
@@ -50,6 +50,14 @@ const CategoryList:React.FC = () => {
           {category === "All" && "📚 "}
           {category === "Study" && "📖 "}
           {category === "Cooking" && "🍳 "}
+          {category === "Travel" && "✈️ "}
+          {category === "Fitness" && "🏋️ "}
+          {category === "Movies" && "🎬 "}
+          {category === "Sports" && "⚽ "}
+          {category === "Music" && "🎵 "}
+          {category === "Gaming" && "🎮 "}
+          {category === "Beauty" && "💄 "}
+          {category === "Fashion" && "👗 "}
           {category}
         </CategoryItem>
       ))}

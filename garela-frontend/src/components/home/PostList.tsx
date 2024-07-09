@@ -5,7 +5,7 @@ import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
 import { formatTimeAgo } from "../../Util";
 import { useRecoilState, useRecoilValue } from "recoil";
-import noImage from "../../imgs/noResult.jpg";
+import noImage from "../../imgs/noResult.png";
 
 import {
   filterState,
@@ -156,6 +156,17 @@ const ActionIcon = styled.span`
   margin-right: 10px;
 `;
 
+const NoResultContainer = styled.div`
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+    
+`;
+const NoResultImage = styled.img`
+  width: 200px;
+`;
+
 const PostList: React.FC = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useRecoilState(filterState);
@@ -236,7 +247,10 @@ const PostList: React.FC = () => {
       </PostFilters>
       <Divider />
       {filteredPosts.length === 0 && (
-        <div style={{ minHeight: "60vh" }}>작성된 게시글이 없습니다</div>
+        <NoResultContainer>
+          <NoResultImage src={noImage} />
+          작성된 게시글이 없습니다
+        </NoResultContainer>
       )}
       {filteredPosts.map((post) => (
         <PostItem
@@ -249,7 +263,7 @@ const PostList: React.FC = () => {
               alt="Profile"
             />
             <div>
-              <div>{post.userName}</div>
+              <div style={{fontWeight: "bold"}}>{post.userName}</div>
               <div>
                 {post.category} • {formatTimeAgo(new Date(post.createdAt))}
               </div>

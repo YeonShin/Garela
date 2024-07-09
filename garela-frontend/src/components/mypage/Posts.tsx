@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import styled from "styled-components";
 import BasicProfileImg from "../../imgs/basicProfile.png";
 import postImg from "../../imgs/postImg.jpg";
+import NoResult from "../../imgs/noResult.png";
 import { formatTimeAgo } from "../../Util";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { myInfoState, UserInfoType } from "../../atom";
@@ -104,13 +105,16 @@ const ActionIcon = styled.span`
 
 const NoPostsMessage = styled.div`
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  height: 100%;
-  font-size: 1.5rem;
+  text-align: center;
+  margin-top: 2rem;
   color: #666;
 `;
 
+const NoResultImage = styled.img`
+  width: 200px;
+`
 const Posts: React.FC = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
@@ -140,7 +144,7 @@ const Posts: React.FC = () => {
   }, []);
 
   if (userInfo.myPosts === null) {
-    return <NoPostsMessage>작성한 게시글이 없습니다</NoPostsMessage>;
+    return <NoPostsMessage><NoResultImage src={NoResult} />작성한 게시글이 없습니다</NoPostsMessage>;
   }
 
   return (

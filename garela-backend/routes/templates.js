@@ -68,7 +68,7 @@ const upload = multer({ storage: storage });
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateJWT, (req, res) => {
+router.get('/', (req, res) => {
   const userId = req.user ? req.user.userId : null;
 
   const query = `
@@ -158,7 +158,7 @@ router.get('/', authenticateJWT, (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:templateId', authenticateJWT, (req, res) => {
+router.get('/:templateId',  (req, res) => {
   const userId = req.user ? req.user.userId : null;
   const templateId = req.params.templateId;
 

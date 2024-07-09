@@ -357,22 +357,31 @@ const CreatePost: React.FC = () => {
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            required
           />
           <CategorySelect
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
             <option value="">Select Category</option>
-            <option value="Study">Study</option>
-            <option value="Hobby">Hobby</option>
-            <option value="Work">Work</option>
+            <option value="Study">📖 Study</option>
+            <option value="Cooking">🍳 Cooking</option>
+            <option value="Fitness">🏋️ Fitness</option>
+            <option value="Movies">🎬 Movies</option>
+            <option value="Sports">⚽ Sports</option>
+            <option value="Music">🎵 Music</option>
+            <option value="Gaming">🎮 Gaming</option>
+            <option value="Beauty">💄 Beauty</option>
+            <option value="Fashion">👗 Fashion</option>
           </CategorySelect>
           <SummaryInput
             placeholder="Summary"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
+            required
           />
-          <FileInput type="file" accept="image/*" onChange={handleFileChange} />
+          <label htmlFor="thumbnail">Thumbnail Image</label>
+          <FileInput id="thumbnail"  type="file" accept="image/*" onChange={handleFileChange} required/>
           <CustomToolbar />
           <ReactQuill
             ref={quillRef}
