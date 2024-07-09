@@ -70,6 +70,15 @@ const ContentImage = styled.img`
 
 const Content = styled.div`
   margin-bottom: 20px;
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+  }
+
+  a {
+    color: #007bff;
+    text-decoration: underline;
+  }
+
   img {
     width: 100%;
     max-height: 100%; // 원하는 최대 높이로 조절
@@ -80,6 +89,67 @@ const Content = styled.div`
   iframe {
     width: 100%;
     height: 300px;
+  }
+
+  pre {
+    background: #f5f2f0;
+    padding: 10px;
+    border-radius: 4px;
+    overflow: auto;
+  }
+
+  blockquote {
+    border-left: 4px solid #5A67D8;
+    margin: 0;
+    padding: 10px 20px;
+  }
+
+  .ql-align-center {
+    text-align: center;
+  }
+
+  .ql-align-right {
+    text-align: right;
+  }
+
+  .ql-align-justify {
+    text-align: justify;
+  }
+
+    .ql-indent-1 {
+    padding-left: 3em;
+  }
+
+  .ql-indent-2 {
+    padding-left: 6em;
+  }
+
+  .ql-indent-3 {
+    padding-left: 9em;
+  }
+
+  .ql-indent-4 {
+    padding-left: 12em;
+  }
+
+    .ql-font-serif {
+    font-family: "Georgia", "Times New Roman", serif;
+  }
+
+  .ql-font-monospace {
+    font-family: "Monaco", "Courier New", monospace;
+  }
+
+  .ql-size-small {
+    font-size: 0.75em;
+  }
+
+  .ql-size-large {
+    font-size: 1.5em;
+  }
+
+  .ql-size-huge {
+    font-size: 2.5em;
   }
 `;
 
