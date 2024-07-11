@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import logo from "../imgs/garela.png";
 import axios from "axios";
 import { useEffect } from "react";
+import ChatBot from "../components/ChatBot";
 
 const MainContainer = styled.div`
   display: flex;
@@ -245,6 +246,7 @@ const Main: React.FC = () => {
           </Content>
         </Section>
       </MainContainer>
+      <ChatBot />
       <Footer />
     </>
   );
