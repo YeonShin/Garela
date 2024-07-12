@@ -193,3 +193,9 @@ export const postFileState = atom<File | null> ({
   key : "postFileState",
   default : null
 });
+
+export const sessionIdState = atom<string | null>({
+  key: "sessionIdState",
+  default: null,
+  effects_UNSTABLE: [persistAtom],
+});

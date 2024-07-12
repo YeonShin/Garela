@@ -18,6 +18,7 @@ import {
   postSummaryState,
   postTitleState,
   selectedPostIdState,
+  sessionIdState,
 } from "../atom";
 import TemplateLibrary from "./home/templates/TemplateLibrary"; // TemplateLibrary 추가
 import axios from "axios";
@@ -359,6 +360,7 @@ const Navbar: React.FC = () => {
   const [category, setCategory] = useRecoilState(postCategoryState);
   const [summary, setSummary] = useRecoilState(postSummaryState);
   const [file, setFile] = useRecoilState<File | null>(postFileState);
+  const [sessionId, setSessionId] = useRecoilState(sessionIdState);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const postDropdownRef = useRef<HTMLDivElement>(null); // ref 추가
@@ -419,6 +421,8 @@ const Navbar: React.FC = () => {
     setUserInfo(defaultUserInfo);
     navigate("/");
     setLogoutModalOpen(false);
+    setSessionId("");
+    
     document.body.style.overflow = "unset";
   };
 
