@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.609.0",
     "@aws-sdk/lib-storage": "^3.609.0",
+    "@langchain/openai": "^0.2.2",
     "aws-sdk": "^2.1653.0",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
