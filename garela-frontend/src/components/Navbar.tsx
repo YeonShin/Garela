@@ -414,6 +414,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("chatMessages")
     setIsLoggedIn(false);
     setUserInfo(defaultUserInfo);
     navigate("/");

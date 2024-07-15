@@ -8,6 +8,8 @@ const FooterContainer = styled.footer`
   gap: 1rem;
   align-items: center;
   padding: 1.5rem;
+  padding-left: 80px;
+  padding-right: 80px;
   background-color: ${props => props.theme.colors.background};
   border-top: 1px solid ${props => props.theme.colors.input};
 
