@@ -4,6 +4,8 @@ import ChatBotIcon from "../imgs/ChatbotIcon.png";
 import CancleIcon from "../imgs/CancleIcon.png";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useRecoilState } from "recoil";
+import { sessionIdState } from "../atom";
 
 const fadeInUp = keyframes`
   from {
@@ -131,24 +133,24 @@ const MessageContainer = styled.div`
 `;
 
 interface Message {
-  from: "user" | "bot";
-  text: string;
+  role: "user" | "bot";
+  content: string;
 }
 
-const MessageWrapper = styled.div<{ from: "user" | "bot" }>`
+const MessageWrapper = styled.div<{ role: "user" | "bot" }>`
   display: flex;
   margin-bottom: 20px;
-  justify-content: ${props => props.from === "user" ? "flex-end" : "flex-start"};
+  justify-content: ${props => props.role === "user" ? "flex-end" : "flex-start"};
 `;
 
-const MessageContent = styled.div<{ from: "user" | "bot" }>`
-  background-color: ${props => props.from === "user" ? "#FFEB3B" : "#FFF"};
-  color: ${props => props.from === "user" ? "#000" : "#000"};
+const MessageContent = styled.div<{ role: "user" | "bot" }>`
+  background-color: ${props => props.role === "user" ? "#FFEB3B" : "#FFF"};
+  color: ${props => props.role === "user" ? "#000" : "#000"};
   padding: 10px;
   border-radius: 10px;
   max-width: 80%;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  align-self: ${props => props.from === "user" ? "flex-end" : "flex-start"};
+  align-self: ${props => props.role === "user" ? "flex-end" : "flex-start"};
 `;
 
 
@@ -204,10 +206,11 @@ const ChatBot: React.FC = () => {
   const [animation, setAnimation] = useState<"fadeInUp" | "fadeOutDown">("fadeInUp");
   const [messages, setMessages] = useState<Message[]>(() => {
     const savedMessages = localStorage.getItem("chatMessages");
-    return savedMessages ? JSON.parse(savedMessages) : [{ from: "bot", text: "Hello! I'm Garela. How can I help you?" }];
+    return savedMessages ? JSON.parse(savedMessages) : [{ role: "assistant", content: "Hello! I'm Garela. How can I help you?" }];
   });
   const [inputValue, setInputValue] = useState("");
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
+  const [sessionId, setSessionId] = useRecoilState(sessionIdState);
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -252,24 +255,30 @@ const ChatBot: React.FC = () => {
 
   const handleSendClick = async () => {
     if (inputValue.trim()) {
-      const newMessages: Message[] = [...messages, { from: "user", text: inputValue }];
+      const newMessages: Message[] = [...messages, { role: "user", content: inputValue }];
       setMessages(newMessages);
       setInputValue("");
       setIsWaitingForResponse(true);
 
       try {
         const response = await axios.post('http://localhost:5000/chat', {
-          userPrompt: inputValue
+          userPrompt: inputValue,
+          sessionId: sessionId,
+          history: newMessages.map(msg => ({role: msg.role, content: msg.content}))
+        }, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
         });
 
         if (response.status === 200) {
           const botMessage = response.data.chat;
-          setMessages(prevMessages => [...prevMessages, { from: "bot", text: botMessage }]);
+          setMessages(prevMessages => [...prevMessages, { role: "bot", content: botMessage }]);
         } else {
-          setMessages(prevMessages => [...prevMessages, { from: "bot", text: "I'm sorry, I couldn't process your request." }]);
+          setMessages(prevMessages => [...prevMessages, { role: "bot", content: "I'm sorry, I couldn't process your request." }]);
         }
       } catch (error) {
-        setMessages(prevMessages => [...prevMessages, { from: "bot", text: "There was an error processing your request." }]);
+        setMessages(prevMessages => [...prevMessages, { role: "bot", content: "There was an error processing your request." }]);
       }
 
       setIsWaitingForResponse(false);
@@ -305,15 +314,15 @@ const ChatBot: React.FC = () => {
             <ChatBox animation={animation}>
               <MessageContainer ref={messageContainerRef}>
                 {messages.map((message, index) => (
-                  <MessageWrapper from={message.from} key={index}>
-                    {message.from === "bot" && <BotIcon src={ChatBotIcon} />}
-                    <MessageContent from={message.from}>{message.text}</MessageContent>
+                  <MessageWrapper role={message.role} key={index}>
+                    {message.role === "bot" && <BotIcon src={ChatBotIcon} />}
+                    <MessageContent role={message.role}>{message.content}</MessageContent>
                   </MessageWrapper>
                 ))}
                 {isWaitingForResponse && (
-                  <MessageWrapper from="bot">
+                  <MessageWrapper role="bot">
                     <BotIcon src={ChatBotIcon} />
-                    <MessageContent from="bot"><AnimatedDots /></MessageContent>
+                    <MessageContent role="bot"><AnimatedDots /></MessageContent>
                   </MessageWrapper>
                 )}
               </MessageContainer>

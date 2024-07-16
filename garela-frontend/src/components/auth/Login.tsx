@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useRecoilState } from "recoil";
-import { UserInfoType, myInfoState } from "../../atom";
+import { UserInfoType, myInfoState, sessionIdState } from "../../atom";
 import logo from "../../imgs/garela.png";
 
 const OuterContainer = styled.div`
@@ -134,6 +134,7 @@ interface FormData {
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [userInfo, setUserInfo] = useRecoilState<UserInfoType>(myInfoState);
+  const [sessionId, setSessionId] = useRecoilState(sessionIdState);
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -167,6 +168,7 @@ const Login: React.FC = () => {
         localStorage.setItem("token", token);
 
         getUserInfo();
+        startSession();
 
         alert("로그인에 성공했습니다.");
         navigate("/");
@@ -194,6 +196,15 @@ const Login: React.FC = () => {
       console.error("유저 정보 조회에 실패했습니다.", error);
     }
   };
+
+  const startSession = async () => {
+    const response = await axios.post("http://localhost:5000/chat/start-session", {}, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`
+      }
+    });
+    setSessionId(response.data.sessionId);
+  }
 
 
 
