@@ -71,8 +71,8 @@ interface ChatBoxProps {
 }
 
 const ChatBox = styled.div<ChatBoxProps>`
-  width: 400px;
-  height: 500px;
+  width: 500px;
+  height: 600px;
   background-color: #F0F1FF;
   border: 1px solid #ddd;
   border-radius: 10px;
@@ -259,31 +259,41 @@ const ChatBot: React.FC = () => {
       setMessages(newMessages);
       setInputValue("");
       setIsWaitingForResponse(true);
-
+  
       try {
         const response = await axios.post('http://localhost:5000/chat', {
           userPrompt: inputValue,
           sessionId: sessionId,
-          history: newMessages.map(msg => ({role: msg.role, content: msg.content}))
+          history: newMessages.map(msg => ({ role: msg.role, content: msg.content }))
         }, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
         });
-
+  
         if (response.status === 200) {
-          const botMessage = response.data.chat;
-          setMessages(prevMessages => [...prevMessages, { role: "bot", content: botMessage }]);
+          const botMessage = typeof response.data.chat.answer === 'string' && response.data.chat.answer;
+          const references: string[] = response.data.chat.references || [];
+  
+          const formattedBotMessage = `${botMessage}`;
+          setMessages(prevMessages => [...prevMessages, { role: "bot", content: formattedBotMessage }]);
+          if (references.length !== 0) {
+            const formattedBotReference = `참고한 게시글:\n${references.map((ref: string) => `http://localhost:3000/home/board/${ref}`).join("\n")}`
+            setMessages(prevMessages => [...prevMessages, { role: "bot", content: formattedBotReference }]);
+          }
         } else {
           setMessages(prevMessages => [...prevMessages, { role: "bot", content: "I'm sorry, I couldn't process your request." }]);
         }
       } catch (error) {
         setMessages(prevMessages => [...prevMessages, { role: "bot", content: "There was an error processing your request." }]);
       }
-
+  
       setIsWaitingForResponse(false);
     }
   };
+  
+  
+  
 
   return (
     <ChatBotContainer >
@@ -315,7 +325,7 @@ const ChatBot: React.FC = () => {
               <MessageContainer ref={messageContainerRef}>
                 {messages.map((message, index) => (
                   <MessageWrapper role={message.role} key={index}>
-                    {message.role === "bot" && <BotIcon src={ChatBotIcon} />}
+                    {message.role === ("bot")  && <BotIcon src={ChatBotIcon} />}
                     <MessageContent role={message.role}>{message.content}</MessageContent>
                   </MessageWrapper>
                 ))}
